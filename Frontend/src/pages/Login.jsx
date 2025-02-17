@@ -12,21 +12,21 @@ const LoginPage = () => {
         setError('');
         setLoading(true);
 
-        try {
-            const response = await axios.post('/api/login', { username, password });
-            // Save the token in localStorage or any preferred storage
-            localStorage.setItem('token', response.data.token);
+        // try {
+        //     const response = await axios.post('/api/login', { username, password });
+        //     // Save the token in localStorage or any preferred storage
+        //     localStorage.setItem('token', response.data.token);
 
-            // Redirect to a dashboard or any other protected route
-            window.location.href = '/dashboard';
-        } catch (err) {
-            setLoading(false);
-            if (err.response && err.response.data.message) {
-                setError(err.response.data.message);
-            } else {
-                setError('An error occurred. Please try again.');
-            }
-        }
+        //     // Redirect to a dashboard or any other protected route
+        //     window.location.href = '/dashboard';
+        // } catch (err) {
+        //     setLoading(false);
+        //     if (err.response && err.response.data.message) {
+        //         setError(err.response.data.message);
+        //     } else {
+        //         setError('An error occurred. Please try again.');
+        //     }
+        // }
     };
 
     return (

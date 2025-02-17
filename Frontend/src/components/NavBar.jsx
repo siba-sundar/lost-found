@@ -1,45 +1,30 @@
-import Container from 'react-bootstrap/Container';
-import Nav from 'react-bootstrap/Nav';
-import Navbar from 'react-bootstrap/Navbar';
+import React from 'react';
+import { Link } from 'react-router-dom';
 
-function ColorSchemesExample() {
+const Navbar = () => {
   return (
-    <>
-      <Navbar bg="dark" data-bs-theme="dark">
-        <Container>
-          <Navbar.Brand href="#home">Navbar</Navbar.Brand>
-          <Nav className="me-auto">
-            <Nav.Link href="#home">Home</Nav.Link>
-            <Nav.Link href="#features">Features</Nav.Link>
-            <Nav.Link href="#pricing">Pricing</Nav.Link>
-          </Nav>
-        </Container>
-      </Navbar>
-      <br />
-      <Navbar bg="primary" data-bs-theme="dark">
-        <Container>
-          <Navbar.Brand href="#home">Navbar</Navbar.Brand>
-          <Nav className="me-auto">
-            <Nav.Link href="#home">Home</Nav.Link>
-            <Nav.Link href="#features">Features</Nav.Link>
-            <Nav.Link href="#pricing">Pricing</Nav.Link>
-          </Nav>
-        </Container>
-      </Navbar>
-
-      <br />
-      <Navbar bg="light" data-bs-theme="light">
-        <Container>
-          <Navbar.Brand href="#home">Navbar</Navbar.Brand>
-          <Nav className="me-auto">
-            <Nav.Link href="#home">Home</Nav.Link>
-            <Nav.Link href="#features">Features</Nav.Link>
-            <Nav.Link href="#pricing">Pricing</Nav.Link>
-          </Nav>
-        </Container>
-      </Navbar>
-    </>
+    <nav className="bg-blue-600 text-white p-4">
+      <div className="container mx-auto flex justify-between items-center">
+        <div className="text-xl font-bold">
+          <Link to="/">MySite</Link>
+        </div>
+        <ul className="flex space-x-6">
+          <li>
+            <Link to="/" className="hover:text-gray-300">Home</Link>
+          </li>
+          <li>
+            <Link to="/about" className="hover:text-gray-300">About</Link>
+          </li>
+          <li>
+            <Link to="/services" className="hover:text-gray-300">Services</Link>
+          </li>
+          <li>
+            <Link to="/contact" className="hover:text-gray-300">Contact</Link>
+          </li>
+        </ul>
+      </div>
+    </nav>
   );
-}
+};
 
-export default ColorSchemesExample;
+export default Navbar;
