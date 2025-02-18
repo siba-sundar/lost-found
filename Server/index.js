@@ -5,10 +5,11 @@ import fs from "fs";  // To read the SQL file
 import path from "path"; // To handle file paths
 import env from "dotenv";
 import pool from "./config/db.js"; // Assuming you have a pool defined in db.js
+import { createTables } from "./config/startup.js";
 
 
 
-import userRoutes from "./routes/userRoutes.js"
+import userRoutes from "./routes/user.routes.js"
 import errorHandling from "./middlewares/errorHandler.js";
 
 const app = express();
@@ -20,6 +21,7 @@ app.use(cors());
 const port = process.env.PORT;
 
 app.use(errorHandling)
+createTables();
 app.use("/api/users", userRoutes)
 
 // Test PostgreSQL connection

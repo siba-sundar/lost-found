@@ -12,6 +12,8 @@ const LoginPage = () => {
         setError('');
         setLoading(true);
 
+        console.log(username,password)
+
         // try {
         //     const response = await axios.post('/api/login', { username, password });
         //     // Save the token in localStorage or any preferred storage

@@ -6,6 +6,7 @@ import Home from "./components/Home"
 
 
 import LoginPage from "./pages/Login"
+import Signup from "./pages/Signup"
 
 function App() {
   const router = createBrowserRouter([
@@ -15,11 +16,15 @@ function App() {
 
     },
     {
+      path: "/signup",
+      element : <Signup/>
+    },
+    {
       path:"/",
       element:<UserLayout/>,
       children:[
         {
-          path:"/",
+          path:"/user/home",
           element:<Home/>
         }
       ]

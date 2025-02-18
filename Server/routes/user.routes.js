@@ -1,15 +1,15 @@
 import express from 'express';
 import { userLogin, userSignup, editDetails, deleteUser } from '../controllers/user.controller.js';
-import { authenticateToken } from '../middlewares/auth.js';
+import { authenticateToken } from '../middlewares/tokenAuth.js';
 
-const userRouter = express.Router();
+const userRouter = express.Router();  // Correct definition
 
 // Public routes
-router.post('/login', userLogin);
-router.post('/signup', userSignup);
+userRouter.post('/login', userLogin);  // Changed 'router' to 'userRouter'
+userRouter.post('/signup', userSignup);
 
 // Protected routes
-router.put('/edit', authenticateToken, editDetails);
-router.delete('/delete', authenticateToken, deleteUser);
+userRouter.put('/edit', authenticateToken, editDetails);
+userRouter.delete('/delete', authenticateToken, deleteUser);
 
 export default userRouter;

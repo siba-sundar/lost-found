@@ -1,8 +1,8 @@
-import pool from "../config/db";
+import pool from "../config/db.js";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from "crypto"
-import validators from "../middlewares/validators.js";
+import {passwordValidator, emailValidator, userExist} from "../middlewares/validators.js";
 
 // You should store this in environment variables
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -155,7 +155,7 @@ export const userSignup = async (req, res) => {
             });
         }
 
-        const emailValidation = validators.emailValidator(email);
+        const emailValidation = emailValidator(email);
         if (!emailValidation.isValid) {
             return res.status(401).json({
                 success: false,
