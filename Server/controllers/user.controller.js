@@ -191,7 +191,7 @@ export const userSignup = async (req, res) => {
             `INSERT INTO users 
             (email_id, name, college_id, phone_number, profile_picture) 
             VALUES ($1, $2, $3, $4, $5) 
-            RETURNING user_id, email_id, name, college_id, phone_number, profile_picture`,
+            RETURNING  name, profile_picture`,
             [email_id, name, college_id, phone_number || null, profile_picture || null]
         );
 
