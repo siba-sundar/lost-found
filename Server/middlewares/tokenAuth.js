@@ -34,3 +34,21 @@ export const authenticateToken = async (req, res, next) => {
         });
     }
 };
+
+
+// Function to extract user_id and email_id from JWT token
+export const extractUserFromToken = (token, secretKey) => {
+    try {
+        // Decode and verify the token using the secret key
+        const decoded = jwt.verify(token, secretKey);
+
+        // Extract and return user_id and email_id from the token payload
+        return {
+            userId: decoded.userId,
+            email: decoded.email
+        };
+    } catch (error) {
+        console.error("Error decoding token:", error.message);
+        return null; // Return null if token is invalid
+    }
+};

@@ -33,3 +33,28 @@ CREATE TABLE IF NOT EXISTS oauth_auth (
     oauth_id VARCHAR(255) NOT NULL,       -- Unique ID from OAuth provider
     PRIMARY KEY (user_id, oauth_provider)
 );
+
+
+
+-- items table 
+
+CREATE TABLE IF NOT EXISTS lost_items(
+    item_id SERIAL PRIMARY KEY, 
+    item_name VARCHAR(100) NOT NULL, 
+    description TEXT    
+)
+
+
+CREATE TABLE IF NOT EXISTS items (
+    item_id SERIAL PRIMARY KEY,
+    item_name VARCHAR(255) NOT NULL,
+    description TEXT,
+    found_by INT REFERENCES users(email_id) DEFAULT NULL,
+    lost_by INT REFERENCES users(email_id) DEFAULT NULL, 
+    location VARCHAR(255),
+    date_found DATE,
+    time_found TIME,
+    time_entered TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(10) CHECK (status IN ('found', 'lost', 'clear')) DEFAULT 'found'
+);
+

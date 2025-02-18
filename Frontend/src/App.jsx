@@ -3,6 +3,7 @@ import {createBrowserRouter, RouterProvider} from  "react-router-dom"
 
 import UserLayout from './layouts/UserLayout'
 import Home from "./components/Home"
+import FoundItemForm from "./components/FoundItem"
 
 
 import LoginPage from "./pages/Login"
@@ -26,6 +27,10 @@ function App() {
         {
           path:"/user/home",
           element:<Home/>
+        },
+        {
+          path:"/user/foundItem",
+          element:<FoundItemForm/>
         }
       ]
     }
