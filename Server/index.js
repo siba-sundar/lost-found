@@ -22,7 +22,7 @@ const port = process.env.PORT;
 
 app.use(errorHandling)
 createTables();
-app.use("/api/users", userRoutes)
+app.use("/users", userRoutes)
 
 // Test PostgreSQL connection
 app.get("/", async (req, res) => {

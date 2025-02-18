@@ -21,7 +21,7 @@ export const userLogin = async (req, res) => {
 
         // Validate input
         if (!email) {
-            return res.status(400).json({
+            return res.status(200).json({
                 success: false,
                 message: "Email is required"
             });
@@ -34,7 +34,7 @@ export const userLogin = async (req, res) => {
         );
 
         if (userResult.rows.length === 0) {
-            return res.status(404).json({
+            return res.status(200).json({
                 success: false,
                 message: "User not found"
             });
@@ -138,33 +138,46 @@ export const userLogin = async (req, res) => {
     }
 };
 
-// User Signup Function
+
+
+
 export const userSignup = async (req, res) => {
     try {
-        const { email, username, password, oauthProvider, oauthId } = req.body;
+        const { 
+            email_id, 
+            name, 
+            college_id, 
+            phone_number,
+            profile_picture,
+            password, 
+            oauthProvider, 
+            oauthId 
+        } = req.body;
 
-        if(!username){
-            username = generateRandomUsername();
+        if(!name){
+            name = generateRandomUsername();
         }
 
-        // Validate input
-        if (!email || (!password && !oauthProvider)) {
+        // Validate required input
+        if (!email_id || !name || !college_id) {
             return res.status(400).json({
                 success: false,
-                message: "Please provide all required details"
+                message: "Email, name, and college ID are required"
             });
         }
 
-        const emailValidation = emailValidator(email);
-        if (!emailValidation.isValid) {
-            return res.status(401).json({
+        if (!password && !oauthProvider) {
+            return res.status(400).json({
                 success: false,
-                message: emailValidation.message
+                message: "Either password or OAuth credentials are required"
             });
         }
 
         // Check if user exists
-        const userExists = await pool.query("SELECT * FROM users WHERE email_id = $1", [email]);
+        const userExists = await pool.query(
+            "SELECT * FROM users WHERE email_id = $1", 
+            [email_id]
+        );
 
         if (userExists.rows.length > 0) {
             return res.status(400).json({
@@ -175,14 +188,17 @@ export const userSignup = async (req, res) => {
 
         // Insert new user
         const newUserResult = await pool.query(
-            "INSERT INTO users (email_id, name) VALUES ($1, $2) RETURNING user_id, email_id, name",
-            [email, username]
+            `INSERT INTO users 
+            (email_id, name, college_id, phone_number, profile_picture) 
+            VALUES ($1, $2, $3, $4, $5) 
+            RETURNING user_id, email_id, name, college_id, phone_number, profile_picture`,
+            [email_id, name, college_id, phone_number || null, profile_picture || null]
         );
 
         const newUser = newUserResult.rows[0];
 
         if (password) {
-            // For email/password authentication, hash password and store it
+            // For email/password authentication
             const saltRounds = 10;
             const hashedPassword = await bcrypt.hash(password, saltRounds);
 
@@ -196,7 +212,7 @@ export const userSignup = async (req, res) => {
                 [newUser.user_id]
             );
         } else if (oauthProvider && oauthId) {
-            // For OAuth authentication, store provider and ID
+            // For OAuth authentication
             await pool.query(
                 "INSERT INTO oauth_auth (user_id, oauth_provider, oauth_id) VALUES ($1, $2, $3)",
                 [newUser.user_id, oauthProvider, oauthId]
@@ -212,7 +228,8 @@ export const userSignup = async (req, res) => {
         const token = jwt.sign(
             { 
                 userId: newUser.user_id, 
-                email: newUser.email_id 
+                email: newUser.email_id,
+                collegeId: newUser.college_id
             },
             JWT_SECRET,
             { expiresIn: TOKEN_EXPIRY }
@@ -221,7 +238,14 @@ export const userSignup = async (req, res) => {
         return res.status(201).json({
             success: true,
             message: "User created successfully",
-            user: newUser,
+            user: {
+                userId: newUser.user_id,
+                email: newUser.email_id,
+                name: newUser.name,
+                collegeId: newUser.college_id,
+                phoneNumber: newUser.phone_number,
+                profilePicture: newUser.profile_picture
+            },
             token
         });
 

@@ -1,34 +1,59 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { Navigate, useNavigate } from 'react-router-dom';
 
 const LoginPage = () => {
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+
+    const navigate = useNavigate()
+    useEffect(() =>{
+        const token  = localStorage.getItem('token');
+        if(token){
+            navigate('/user/home');
+        }
+    },[])
 
     const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
 
-        console.log(username,password)
+        console.log(email, password);
 
-        // try {
-        //     const response = await axios.post('/api/login', { username, password });
-        //     // Save the token in localStorage or any preferred storage
-        //     localStorage.setItem('token', response.data.token);
+        
+       
 
-        //     // Redirect to a dashboard or any other protected route
-        //     window.location.href = '/dashboard';
-        // } catch (err) {
-        //     setLoading(false);
-        //     if (err.response && err.response.data.message) {
-        //         setError(err.response.data.message);
-        //     } else {
-        //         setError('An error occurred. Please try again.');
-        //     }
-        // }
+        try {
+            const response = await axios.post('http://localhost:4001/users/login', {
+                email,  // Correcting this to send email instead of username
+                password,
+            });
+
+            console.log(response.data.success)
+            if (response.data.success === true) {
+                if (response.data.token) {
+                    // Handle successful login, like saving the token
+                    localStorage.setItem('token', response.data.token);
+                    console.log(response)
+
+                }
+
+
+                navigate('/user/home')
+            }else{
+                setError("Please enter valid details")
+            }
+
+
+        } catch (err) {
+            setError('An error occurred during login. Please try again.');
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -37,15 +62,15 @@ const LoginPage = () => {
                 <h2 className="text-2xl font-semibold text-center mb-6">Login</h2>
                 <form onSubmit={handleLogin}>
                     <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="username">
-                            Username
+                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
+                            Email
                         </label>
                         <input
-                            type="text"
-                            id="username"
+                            type="email"
+                            id="email"
                             className="w-full px-3 py-2 border rounded-lg text-gray-700"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             required
                         />
                     </div>
