@@ -83,14 +83,14 @@ export const addItem = async (req, res) => {
 
 
 
-export const  editItem  = async(req, res) =>{
-    try{
-        const {}
-    }catch(err){
-        console.log("Error occured while editing item ",err)
-        return res.status(500).json({
-            success:false,
-            message:"Server Error, Please try again later",
-        })
-    }
-}
+// export const  editItem  = async(req, res) =>{
+//     try{
+//         const {}
+//     }catch(err){
+//         console.log("Error occured while editing item ",err)
+//         return res.status(500).json({
+//             success:false,
+//             message:"Server Error, Please try again later",
+//         })
+//     }
+// }
