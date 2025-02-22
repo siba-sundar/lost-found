@@ -39,29 +39,31 @@ CREATE TABLE IF NOT EXISTS oauth_auth (
 
     const itemsQuery = `
 
-CREATE TABLE IF NOT EXISTS items (
-    -- Table for storing item details (general information about an item)
-CREATE TABLE IF NOT EXISTS items (
-    item_id SERIAL PRIMARY KEY,
-    item_name VARCHAR(255) NOT NULL,
-    description TEXT,
-    found_by INT REFERENCES users(email_id) DEFAULT NULL,
-    lost_by INT REFERENCES users(email_id) DEFAULT NULL, 
-    location VARCHAR(255),
-    date_found DATE,
-    time_found TIME,
-    time_entered TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    status VARCHAR(10) CHECK (status IN ('found', 'lost', 'clear')) DEFAULT 'found'
-);
 
--- Table for storing images associated with an item
-CREATE TABLE IF NOT EXISTS item_images (
-    image_id SERIAL PRIMARY KEY,      -- Unique ID for the image
-    item_id INT REFERENCES items(item_id) ON DELETE CASCADE,  -- Link to items table
-    image_url VARCHAR(255) NOT NULL,  -- URL of the image (Cloudinary or other storage service)
-    time_entered TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-);
+    -- Table for storing item details (general information about an item)
+    CREATE TABLE IF NOT EXISTS items (
+        item_id SERIAL PRIMARY KEY,
+        item_name VARCHAR(255) NOT NULL,
+        description TEXT,
+        found_by INT REFERENCES users(user_id) DEFAULT NULL,
+        lost_by INT REFERENCES users(user_id) DEFAULT NULL, 
+        location VARCHAR(255),
+        date_found DATE,
+        time_found TIME,
+        time_entered TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        status VARCHAR(10) CHECK (status IN ('found', 'lost', 'clear')) DEFAULT 'found'
+    );
+    
+    -- Table for storing images associated with an item
+    CREATE TABLE IF NOT EXISTS item_images (
+        image_id SERIAL PRIMARY KEY,      -- Unique ID for the image
+        item_id INT REFERENCES items(item_id) ON DELETE CASCADE,  -- Link to items table
+        image_url VARCHAR(255) NOT NULL,  -- URL of the image (Cloudinary or other storage service)
+        time_entered TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    
+    
+    
 `
     try {
         await pool.query(userQueryText);
@@ -69,6 +71,7 @@ CREATE TABLE IF NOT EXISTS item_images (
         await pool.query(authQueryTable);
         console.log("Auth tables created");
         await pool.query(itemsQuery);
+        console.log("Items tables created");
     } catch (error) {
         console.log("Error while creating user table : ", error);
     }

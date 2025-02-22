@@ -10,6 +10,20 @@ CREATE TABLE IF NOT EXISTS users (
     profile_picture TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    
+);
+
+CREATE TABLE IF NOT EXISTS admin (
+    user_id SERIAL PRIMARY KEY,
+    college_id VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    phone_number NUMERIC(15,0),
+    email_id VARCHAR(255) UNIQUE NOT NULL,
+    profile_picture TEXT,
+    position VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    
 );
 
 
@@ -59,5 +73,22 @@ CREATE TABLE IF NOT EXISTS item_images (
     image_url VARCHAR(255) NOT NULL,  -- URL of the image (Cloudinary or other storage service)
     time_entered TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
+
+
+-- found request tabel 
+CREATE TABLE IF NOT EXISTS item_found(
+   request_id SERIAL PRIMARY KEY,
+    item_name VARCHAR(255) NOT NULL,
+    description TEXT,
+    found_by INT REFERENCES users(email_id) DEFAULT NULL,
+    location VARCHAR(255),
+    date_found DATE,
+    time_found TIME,
+    file_path TEXT,
+    time_entered TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    
+)
 
 

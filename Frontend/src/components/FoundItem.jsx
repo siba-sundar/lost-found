@@ -3,26 +3,36 @@ import React, { useState } from 'react';
 const FoundItemForm = () => {
     const [item_name, setItemName] = useState('');
     const [description, setDescription] = useState('');
-    const [found_by, setFoundBy] = useState('');
+    
     const [location, setLocation] = useState('');
     const [date_found, setDateFound] = useState('');
     const [time_found, setTimeFound] = useState('');
-    const [images, setImages] = useState([]); // For storing images
+    const [image, setImage] = useState(null); // For storing the selected image
+    const [imagePreview, setImagePreview] = useState(''); // For showing the preview
     const [loading, setLoading] = useState(false);
 
     // Individual input handlers
     const handleItemNameChange = (e) => setItemName(e.target.value);
     const handleDescriptionChange = (e) => setDescription(e.target.value);
-    const handleFoundByChange = (e) => setFoundBy(e.target.value);
     const handleLocationChange = (e) => setLocation(e.target.value);
     const handleDateFoundChange = (e) => setDateFound(e.target.value);
     const handleTimeFoundChange = (e) => setTimeFound(e.target.value);
 
-    // Handle file input change for images
+    // Handle file input change for the image
     const handleFileChange = (e) => {
-        const files = Array.from(e.target.files);
-        setImages(files); // Storing the selected images in the form data
+        const file = e.target.files[0];
+        if (file && file.type.startsWith('image/')) {
+            setImage(file);
+            setImagePreview(URL.createObjectURL(file));  // Generate image preview
+        } else {
+            alert("Please upload a valid image file.");
+            setImage(null);
+            setImagePreview('');
+        }
     };
+
+    const found_by = localStorage.getItem('token');
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -35,11 +45,7 @@ const FoundItemForm = () => {
         data.append('location', location);
         data.append('date_found', date_found);
         data.append('time_found', time_found);
-
-        // Append images to form data
-        images.forEach((image, index) => {
-            data.append(`images[${index}]`, image);
-        });
+        data.append('image', image);  // Append the single image
 
         try {
             setLoading(true);
@@ -47,7 +53,7 @@ const FoundItemForm = () => {
             // Sending data to backend (e.g., using fetch)
             const response = await fetch('/your-backend-endpoint', {
                 method: 'POST',
-                body: data,  // Send form data including images
+                body: data,  // Send form data including image
             });
 
             setLoading(false);
@@ -97,20 +103,6 @@ const FoundItemForm = () => {
                         />
                     </div>
 
-                    <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="found_by">
-                            Found By (User ID)
-                        </label>
-                        <input
-                            type="number"
-                            id="found_by"
-                            name="found_by"
-                            className="w-full px-3 py-2 border rounded-lg text-gray-700"
-                            value={found_by}
-                            onChange={handleFoundByChange}
-                            required
-                        />
-                    </div>
 
                     <div className="mb-4">
                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="location">
@@ -158,17 +150,24 @@ const FoundItemForm = () => {
                     </div>
 
                     <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="images">
-                            Upload Images
+                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="image">
+                            Upload Image
                         </label>
                         <input
                             type="file"
-                            id="images"
-                            name="images"
+                            id="image"
+                            name="image"
                             accept="image/*"
-                            multiple
                             onChange={handleFileChange}
+                            required
                         />
+                        {/* Image Preview */}
+                        {imagePreview && (
+                            <div className="mt-4">
+                                <p className="text-sm text-gray-600">Image Preview:</p>
+                                <img src={imagePreview} alt="Preview" className="w-32 h-32 object-cover" />
+                            </div>
+                        )}
                     </div>
 
                     <button
