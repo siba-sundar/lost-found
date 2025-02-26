@@ -1,18 +1,17 @@
 import pool from "../config/db.js";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import crypto from "crypto"
+import crypto from "crypto";
 import {passwordValidator, emailValidator, userExist} from "../middlewares/validators.js";
 
-// You should store this in environment variables
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-const TOKEN_EXPIRY = '24h';
+// IMPORTANT: Move this to environment variables (.env file)
+// Don't use a fallback string in production code
+const JWT_SECRET = process.env.JWT_SECRET;
+const TOKEN_EXPIRY = process.env.TOKEN_EXPIRY || '24h';
 
-const generateRandomUsername = () =>{
+const generateRandomUsername = () => {
     return 'user_' + crypto.randomBytes(4).toString('hex');
-}
-
-
+};
 
 // User Login Function
 export const userLogin = async (req, res) => {
@@ -21,7 +20,7 @@ export const userLogin = async (req, res) => {
 
         // Validate input
         if (!email) {
-            return res.status(200).json({
+            return res.status(400).json({
                 success: false,
                 message: "Email is required"
             });
@@ -34,7 +33,7 @@ export const userLogin = async (req, res) => {
         );
 
         if (userResult.rows.length === 0) {
-            return res.status(200).json({
+            return res.status(404).json({
                 success: false,
                 message: "User not found"
             });
@@ -107,29 +106,51 @@ export const userLogin = async (req, res) => {
             });
         }
 
-        // Generate JWT token
-        const token = jwt.sign(
-            { 
-                userId: user.user_id, 
-                email: user.email_id 
-            },
-            JWT_SECRET,
-            { expiresIn: TOKEN_EXPIRY }
-        );
+        // Check if JWT_SECRET is properly configured
+        if (!JWT_SECRET) {
+            console.error("JWT_SECRET is not configured");
+            return res.status(500).json({
+                success: false,
+                message: "Server configuration error"
+            });
+        }
 
-        return res.status(200).json({
-            success: true,
-            message: "Login successful",
-            user: {
-                userId: user.user_id,
+        try {
+            // Generate JWT token with consistent payload structure
+            const tokenPayload = { 
+                userId: user.user_id, 
                 email: user.email_id,
-                name: user.name
-            },
-            token
-        });
+                collegeId: user.college_id,
+                role: 'user'  // Consider adding roles for permission control
+            };
+            
+            const token = jwt.sign(
+                tokenPayload,
+                JWT_SECRET,
+                { expiresIn: TOKEN_EXPIRY }
+            );
+
+            return res.status(200).json({
+                success: true,
+                message: "Login successful",
+                user: {
+                    userId: user.user_id,
+                    email: user.email_id,
+                    name: user.name,
+                    collegeId: user.college_id
+                },
+                token
+            });
+        } catch (tokenError) {
+            console.error("Error generating token:", tokenError);
+            return res.status(500).json({
+                success: false,
+                message: "Failed to generate authentication token"
+            });
+        }
 
     } catch (err) {
-        console.log("Error occurred during login: ", err.stack);
+        console.error("Error occurred during login: ", err.stack);
         return res.status(500).json({
             success: false,
             message: "An error occurred during login",
@@ -138,12 +159,9 @@ export const userLogin = async (req, res) => {
     }
 };
 
-
-
-
 export const userSignup = async (req, res) => {
     try {
-        const { 
+        let { 
             email_id, 
             name, 
             college_id, 
@@ -154,15 +172,16 @@ export const userSignup = async (req, res) => {
             oauthId 
         } = req.body;
 
+        // Generate random username if not provided
         if(!name){
             name = generateRandomUsername();
         }
 
         // Validate required input
-        if (!email_id || !name || !college_id) {
+        if (!email_id || !college_id) {
             return res.status(400).json({
                 success: false,
-                message: "Email, name, and college ID are required"
+                message: "Email and college ID are required"
             });
         }
 
@@ -180,7 +199,7 @@ export const userSignup = async (req, res) => {
         );
 
         if (userExists.rows.length > 0) {
-            return res.status(400).json({
+            return res.status(409).json({
                 success: false,
                 message: "User already exists"
             });
@@ -191,10 +210,9 @@ export const userSignup = async (req, res) => {
             `INSERT INTO users 
             (email_id, name, college_id, phone_number, profile_picture) 
             VALUES ($1, $2, $3, $4, $5) 
-            RETURNING  name, profile_picture`,
+            RETURNING user_id, email_id, name, college_id, phone_number, profile_picture`,
             [email_id, name, college_id, phone_number || null, profile_picture || null]
         );
-
         const newUser = newUserResult.rows[0];
 
         if (password) {
@@ -224,33 +242,53 @@ export const userSignup = async (req, res) => {
             );
         }
 
-        // Generate JWT token
-        const token = jwt.sign(
-            { 
+        // Check if JWT_SECRET is properly configured
+        if (!JWT_SECRET) {
+            console.error("JWT_SECRET is not configured");
+            return res.status(500).json({
+                success: false,
+                message: "Server configuration error"
+            });
+        }
+
+        try {
+            // Generate JWT token with consistent payload structure
+            const tokenPayload = { 
                 userId: newUser.user_id, 
                 email: newUser.email_id,
-                collegeId: newUser.college_id
-            },
-            JWT_SECRET,
-            { expiresIn: TOKEN_EXPIRY }
-        );
-
-        return res.status(201).json({
-            success: true,
-            message: "User created successfully",
-            user: {
-                userId: newUser.user_id,
-                email: newUser.email_id,
-                name: newUser.name,
                 collegeId: newUser.college_id,
-                phoneNumber: newUser.phone_number,
-                profilePicture: newUser.profile_picture
-            },
-            token
-        });
+                role: 'user'  // Consider adding roles for permission control
+            };
+            
+            const token = jwt.sign(
+                tokenPayload,
+                JWT_SECRET,
+                { expiresIn: TOKEN_EXPIRY }
+            );
+
+            return res.status(201).json({
+                success: true,
+                message: "User created successfully",
+                user: {
+                    userId: newUser.user_id,
+                    email: newUser.email_id,
+                    name: newUser.name,
+                    collegeId: newUser.college_id,
+                    phoneNumber: newUser.phone_number,
+                    profilePicture: newUser.profile_picture
+                },
+                token
+            });
+        } catch (tokenError) {
+            console.error("Error generating token:", tokenError);
+            return res.status(500).json({
+                success: false,
+                message: "User created but failed to generate authentication token"
+            });
+        }
 
     } catch (err) {
-        console.log("Error occurred during signup: ", err.stack);
+        console.error("Error occurred during signup: ", err.stack);
         return res.status(500).json({
             success: false,
             message: "An error occurred during signup",
@@ -259,7 +297,56 @@ export const userSignup = async (req, res) => {
     }
 };
 
-// Edit User Details Function
+// You should also create a middleware to verify JWT tokens
+export const verifyToken = (req, res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
+        
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({
+                success: false,
+                message: "Authorization token is missing"
+            });
+        }
+        
+        const token = authHeader.split(' ')[1];
+        
+        if (!JWT_SECRET) {
+            console.error("JWT_SECRET is not configured");
+            return res.status(500).json({
+                success: false,
+                message: "Server configuration error"
+            });
+        }
+        
+        jwt.verify(token, JWT_SECRET, (err, decoded) => {
+            if (err) {
+                if (err.name === 'TokenExpiredError') {
+                    return res.status(401).json({
+                        success: false,
+                        message: "Token has expired"
+                    });
+                }
+                
+                return res.status(401).json({
+                    success: false,
+                    message: "Invalid token"
+                });
+            }
+            
+            req.user = decoded;
+            next();
+        });
+    } catch (err) {
+        console.error("Error verifying token:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to authenticate user"
+        });
+    }
+};
+
+// Edit User Details Function - remains mostly the same
 export const editDetails = async (req, res) => {
     try {
         const { userId } = req.user; // This will come from auth middleware
@@ -309,7 +396,7 @@ export const editDetails = async (req, res) => {
         });
 
     } catch (err) {
-        console.log("Error occurred while updating user", err.stack);
+        console.error("Error occurred while updating user", err.stack);
         return res.status(500).json({
             success: false,
             message: "An error occurred while updating user details",
@@ -318,7 +405,7 @@ export const editDetails = async (req, res) => {
     }
 };
 
-// Delete User Function
+// Delete User Function - remains mostly the same
 export const deleteUser = async (req, res) => {
     try {
         const { userId } = req.user; // This will come from auth middleware
@@ -341,7 +428,7 @@ export const deleteUser = async (req, res) => {
         });
 
     } catch (err) {
-        console.log("Error occurred while deleting user", err.stack);
+        console.error("Error occurred while deleting user", err.stack);
         return res.status(500).json({
             success: false,
             message: "An error occurred while deleting user",

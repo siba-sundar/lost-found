@@ -24,7 +24,6 @@ export const uploadToCloudinary = async (filePath) => {
         { width: 1200, height: 1200 }
       ]
     });
-    console.log(url)
     return url;
     
   } catch (error) {

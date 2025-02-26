@@ -1,38 +1,7 @@
 import pool from "../config/db.js";
-import multer from 'multer';
 import cloudinary from 'cloudinary';
 
 
-// Configure Cloudinary
-cloudinary.config({
-    cloud_name: process.env.CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-// Configure Multer for file uploads
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, './uploads');  // Temporary folder to store images
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + file.originalname);  // Rename file with a timestamp
-    }
-});
-
-// Allow multiple image uploads
-const upload = multer({ storage: storage }).array('images', 5);  // Max 5 images per upload
-
-// Function to upload to Cloudinary
-const uploadToCloudinary = async (filePath) => {
-    try {
-        const result = await cloudinary.uploader.upload(filePath);
-        return result.secure_url;  // Return Cloudinary secure URL
-    } catch (error) {
-        console.error("Error uploading to Cloudinary:", error);
-        throw error;
-    }
-};
 
 // Add item controller with image handling
 export const addItem = async (req, res) => {
@@ -123,10 +92,217 @@ export const addItem = async (req, res) => {
 
 
 
+//get list of items
+
+export const getItemsList = async (req, res) => {
+    try {
+        // Get pagination parameters
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = (page - 1) * limit;
+        
+        // Get filter parameters
+        const { status, location, search, dateFrom, dateTo } = req.query;
+        
+        // Base query - selecting all columns from items table, omitting user details
+        let query = `
+            SELECT i.*, 
+                   (SELECT image_url FROM item_images WHERE item_id = i.item_id LIMIT 1) as primary_image_url,
+                   (SELECT COUNT(*) FROM item_images WHERE item_id = i.item_id) as image_count
+            FROM items i
+            WHERE 1=1
+        `;
+        
+        const queryParams = [];
+        let paramCounter = 1;
+        
+        // Add filters if provided
+        if (status) {
+            query += ` AND i.status = $${paramCounter}`;
+            queryParams.push(status);
+            paramCounter++;
+        }
+        
+        if (location) {
+            query += ` AND i.location ILIKE $${paramCounter}`;
+            queryParams.push(`%${location}%`);
+            paramCounter++;
+        }
+        
+        if (search) {
+            query += ` AND (
+                i.item_name ILIKE $${paramCounter} OR 
+                i.description ILIKE $${paramCounter}
+            )`;
+            queryParams.push(`%${search}%`);
+            paramCounter++;
+        }
+        
+        // Add date range filters
+        if (dateFrom) {
+            query += ` AND i.date_found >= $${paramCounter}`;
+            queryParams.push(dateFrom);
+            paramCounter++;
+        }
+        
+        if (dateTo) {
+            query += ` AND i.date_found <= $${paramCounter}`;
+            queryParams.push(dateTo);
+            paramCounter++;
+        }
+        
+        // Add sorting - newest items first
+        query += ` ORDER BY i.time_entered DESC`;
+        
+        // Add pagination
+        query += ` LIMIT $${paramCounter} OFFSET $${paramCounter + 1}`;
+        queryParams.push(limit, offset);
+        
+        // Execute query
+        const result = await pool.query(query, queryParams);
+        
+        // Count total matching items for pagination info
+        let countQuery = `
+            SELECT COUNT(*) 
+            FROM items i
+            WHERE 1=1
+        `;
+        
+        // Reset param counter for count query
+        paramCounter = 1;
+        const countParams = [];
+        
+        // Add the same filters to count query
+        if (status) {
+            countQuery += ` AND i.status = $${paramCounter}`;
+            countParams.push(status);
+            paramCounter++;
+        }
+        
+        if (location) {
+            countQuery += ` AND i.location ILIKE $${paramCounter}`;
+            countParams.push(`%${location}%`);
+            paramCounter++;
+        }
+        
+        if (search) {
+            countQuery += ` AND (
+                i.item_name ILIKE $${paramCounter} OR 
+                i.description ILIKE $${paramCounter}
+            )`;
+            countParams.push(`%${search}%`);
+            paramCounter++;
+        }
+        
+        // Add the same date filters to count query
+        if (dateFrom) {
+            countQuery += ` AND i.date_found >= $${paramCounter}`;
+            countParams.push(dateFrom);
+            paramCounter++;
+        }
+        
+        if (dateTo) {
+            countQuery += ` AND i.date_found <= $${paramCounter}`;
+            countParams.push(dateTo);
+            paramCounter++;
+        }
+        
+        const countResult = await pool.query(countQuery, countParams);
+        const totalItems = parseInt(countResult.rows[0].count);
+        const totalPages = Math.ceil(totalItems / limit);
+        
+        // For items with multiple images, fetch all images for each item
+        const itemsWithFullData = await Promise.all(result.rows.map(async (item) => {
+            if (item.image_count > 0) {
+                const imagesQuery = `SELECT * FROM item_images WHERE item_id = $1 ORDER BY time_entered ASC`;
+                const imagesResult = await pool.query(imagesQuery, [item.item_id]);
+                return { ...item, images: imagesResult.rows };
+            }
+            return { ...item, images: [] };
+        }));
+        
+        return res.status(200).json({
+            success: true,
+            pagination: {
+                total: totalItems,
+                totalPages,
+                currentPage: page,
+                itemsPerPage: limit,
+                hasNextPage: page < totalPages,
+                hasPreviousPage: page > 1
+            },
+            items: itemsWithFullData
+        });
+        
+    } catch (err) {
+        console.error("Error fetching items list:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Unable to fetch items",
+            error: err.message
+        });
+    }
+};
+
+// single item
+
+
+export const singleItem = async (req, res) => {
+    try {
+        const { id } = req.params; // Match the parameter name from the route
+        
+        if (!id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Item ID is required'
+            });
+        }
+
+        const itemDetails = await pool.query(
+            `SELECT * FROM items WHERE item_id = $1`, 
+            [id]
+        );
+
+        // Check if any rows were returned
+        if (itemDetails.rowCount === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Item not found'
+            });
+        }
+
+        const item = itemDetails.rows[0];
+        
+        // Get associated images
+        const imagesResult = await pool.query(
+            `SELECT image_id, image_url FROM item_images WHERE item_id = $1`,
+            [id]
+        );
+        
+        // Add images to the response
+        item.images = imagesResult.rows;
+
+        return res.status(200).json({
+            success: true,
+            item: item
+        });
+        
+    } catch (err) {
+        console.error("Error while fetching item details:", err);
+        return res.status(500).json({
+            success: false,
+            message: 'Unable to perform the action at the moment',
+            error: err.message
+        });
+    }
+};
 
 // export const  editItem  = async(req, res) =>{
 //     try{
-//         const {}
+//         const {editData} = req.body;
+
+
+        
 //     }catch(err){
 //         console.log("Error occured while editing item ",err)
 //         return res.status(500).json({
@@ -135,3 +311,102 @@ export const addItem = async (req, res) => {
 //         })
 //     }
 // }
+
+
+
+export const deleteItem = async (req, res) => {
+    const client = await pool.connect();
+    
+    try {
+        await client.query('BEGIN'); // Start transaction
+
+        const itemId = req.params.id;
+        const { userID, role } = req.user; // From authenticateToken middleware
+
+        // First check if item exists and get its details
+        const checkItemQuery = `
+            SELECT * FROM items 
+            WHERE item_id = $1;
+        `;
+        const itemResult = await client.query(checkItemQuery, [itemId]);
+
+        if (itemResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Item not found"
+            });
+        }
+
+        const item = itemResult.rows[0];
+
+        // Check if user has permission to delete
+        // Allow if user is admin or if they created the item
+        if (role !== 'admin' && item.found_by !== userID && item.lost_by !== userID) {
+            return res.status(403).json({
+                success: false,
+                message: "You don't have permission to delete this item"
+            });
+        }
+
+        // Get all image URLs before deleting
+        const getImagesQuery = `
+            SELECT image_url FROM item_images 
+            WHERE item_id = $1;
+        `;
+        const imagesResult = await client.query(getImagesQuery, [itemId]);
+        const imageUrls = imagesResult.rows.map(row => row.image_url);
+
+        // Delete images from Cloudinary
+        for (const url of imageUrls) {
+            try {
+                // Extract public_id from Cloudinary URL
+                const publicId = url.split('/').pop().split('.')[0];
+                await cloudinary.uploader.destroy(publicId);
+            } catch (error) {
+                console.error("Error deleting image from Cloudinary:", error);
+                // Continue with deletion even if Cloudinary delete fails
+            }
+        }
+
+        // Delete associated records in order
+        // 1. Delete image records
+        await client.query(`
+            DELETE FROM item_images 
+            WHERE item_id = $1;
+        `, [itemId]);
+
+        // 2. Delete any associated requests
+        await client.query(`
+            DELETE FROM requests 
+            WHERE item_id = $1;
+        `, [itemId]);
+
+        // 3. Finally delete the item
+        await client.query(`
+            DELETE FROM items 
+            WHERE item_id = $1;
+        `, [itemId]);
+
+        await client.query('COMMIT');
+
+        return res.status(200).json({
+            success: true,
+            message: "Item and associated data deleted successfully"
+        });
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error("Error deleting item:", error);
+        return res.status(500).json({
+            success: false,
+            message: "An error occurred while deleting the item"
+        });
+    } finally {
+        client.release();
+    }
+};
+
+
+
+
+// export const getItems = 

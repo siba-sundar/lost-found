@@ -1,12 +1,10 @@
 import express from 'express'
 import { upload } from '../middlewares/multer.js';
 import { uploadToCloudinary } from '../utils/cloudinary.js';
-import { addItem } from '../controllers/item.controller.js';
+import { addItem , deleteItem, getItemsList, singleItem} from '../controllers/item.controller.js';
 import { authenticateToken } from '../middlewares/tokenAuth.js';
 
 const itemRoutes = express.Router();
-
-// itemRoutes.get('/items', getItems);
 
 // itemRoutes.get('/items', getItems);
 itemRoutes.post('/add', authenticateToken, upload.single('image'), async (req, res) => {
@@ -37,8 +35,11 @@ itemRoutes.post('/add', authenticateToken, upload.single('image'), async (req, r
 });
 
 
+itemRoutes.get("/items", authenticateToken, getItemsList);
 
-// itemRoutes.delete('/delete',authenticateToken,deleteItem);
+itemRoutes.get('/single-item/:id', authenticateToken, singleItem);
+
+itemRoutes.delete('/delete/:id',authenticateToken,deleteItem);
 // itemRoutes.put('/edit',authenticateToken,editItem);
 
 

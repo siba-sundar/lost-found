@@ -25,14 +25,14 @@ CREATE TABLE IF NOT EXISTS auth_login (
 
 CREATE TABLE IF NOT EXISTS email_password_auth (
     user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
-    password VARCHAR(255) NOT NULL,
+    password VARCHAR(255) ,
     PRIMARY KEY (user_id)
 );
 
 CREATE TABLE IF NOT EXISTS oauth_auth (
     user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
-    oauth_provider VARCHAR(50) NOT NULL,
-    oauth_id VARCHAR(255) NOT NULL,
+    oauth_provider VARCHAR(50) ,
+    oauth_id VARCHAR(255) ,
     PRIMARY KEY (user_id, oauth_provider)
 );`
 
@@ -60,11 +60,28 @@ CREATE TABLE IF NOT EXISTS oauth_auth (
         item_id INT REFERENCES items(item_id) ON DELETE CASCADE,  -- Link to items table
         image_url VARCHAR(255) NOT NULL,  -- URL of the image (Cloudinary or other storage service)
         time_entered TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
+    );`
+
+
+    const requestQuery = `
+    -- found request tabel 
+CREATE TABLE IF NOT EXISTS item_found(
+   request_id SERIAL PRIMARY KEY,
+    item_name VARCHAR(255) NOT NULL,
+    description TEXT,
+    found_by INT REFERENCES users(user_id) DEFAULT NULL,
+    location VARCHAR(255),
+    date_found DATE,
+    time_found TIME,
+    file_path TEXT,
+    time_entered TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     
-    
-    
-`
+)
+
+
+
+    `
+
     try {
         await pool.query(userQueryText);
         console.log("User table created");
@@ -72,6 +89,8 @@ CREATE TABLE IF NOT EXISTS oauth_auth (
         console.log("Auth tables created");
         await pool.query(itemsQuery);
         console.log("Items tables created");
+        await pool.query(requestQuery)
+        console.log("Request table created ")
     } catch (error) {
         console.log("Error while creating user table : ", error);
     }

@@ -12,6 +12,7 @@ import { createTables } from "./config/startup.js";
 import userRoutes from "./routes/user.routes.js"
 import errorHandling from "./middlewares/errorHandler.js";
 import itemRoutes from "./routes/items.routes.js";
+import itemRequestRoutes from "./routes/request.routes.js";
 
 const app = express();
 env.config();
@@ -22,11 +23,12 @@ app.use(cors());
 const port = process.env.PORT;
 
 app.use(errorHandling)
-createTables();
+// createTables();
 
 
 app.use("/users", userRoutes);
 app.use("/item", itemRoutes )
+app.use("/request", itemRequestRoutes)
 
 // Test PostgreSQL connection
 app.get("/", async (req, res) => {
