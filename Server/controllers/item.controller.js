@@ -408,5 +408,47 @@ export const deleteItem = async (req, res) => {
 
 
 
+export const getDashboard = async (req, res) => {
+    try {
+        const foundItemLatest = await pool.query(
+            `SELECT * FROM items 
+            WHERE status = 'found' 
+            ORDER BY time_entered 
+            LIMIT 8`
+        );
 
-// export const getItems = 
+        if (foundItemLatest.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Unable to retrieve data"
+            });
+        }
+        
+
+        const lostItemLatest = await pool.query(
+            `SELECT * from items
+            WHERE status = 'lost'
+            ORDER BY time_entered
+            LIMIT 8`
+        );
+
+        if(lostItemLatest.rowCount === 0){
+            return res.status(404).json({
+                success:false,
+                message: "Unable to retrive data"
+            });
+        }
+
+        return res.status(200).json({
+            foundItems : foundItemLatest.rows,
+            lostItems : lostItemLatest.rows     
+        })
+     
+
+        
+    } catch (error) {
+        console.error("error while retriving dash detials" ,error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+};
+

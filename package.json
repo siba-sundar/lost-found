@@ -1,5 +1,9 @@
 {
   "dependencies": {
-    "cdbreact": "^1.5.19"
+    "cdbreact": "^1.5.19",
+    "cookie-parser": "^1.4.7",
+    "express-session": "^1.18.1",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0"
   }
 }

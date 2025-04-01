@@ -1,0 +1,12 @@
+version: "3"
+services:
+  db:
+    image: postgres:12
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234567890
+      POSTGRES_DB: secrets
+  app:
+    image: testapp:1.0
+    ports:
+      - "5000:3001"

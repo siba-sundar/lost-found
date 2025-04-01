@@ -9,7 +9,7 @@ import { createTables } from "./config/startup.js";
 
 
 
-import userRoutes from "./routes/user.routes.js"
+import userRoutes from "./routes/auth.routes.js"
 import errorHandling from "./middlewares/errorHandler.js";
 import itemRoutes from "./routes/items.routes.js";
 import itemRequestRoutes from "./routes/request.routes.js";
@@ -26,9 +26,9 @@ app.use(errorHandling)
 // createTables();
 
 
-app.use("/users", userRoutes);
-app.use("/item", itemRoutes )
-app.use("/request", itemRequestRoutes)
+app.use("/api/auth", userRoutes);
+app.use("/api/item", itemRoutes );
+app.use("/api/request", itemRequestRoutes);
 
 // Test PostgreSQL connection
 app.get("/", async (req, res) => {
