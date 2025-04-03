@@ -249,7 +249,7 @@ export const getItemsList = async (req, res) => {
 
 export const singleItem = async (req, res) => {
     try {
-        const { id } = req.params; // Match the parameter name from the route
+        const { id } = req.params;
         
         if (!id) {
             return res.status(400).json({
@@ -259,11 +259,15 @@ export const singleItem = async (req, res) => {
         }
 
         const itemDetails = await pool.query(
-            `SELECT * FROM items WHERE item_id = $1`, 
+            `SELECT i.*, 
+                    COALESCE(json_agg(img.image_url) FILTER (WHERE img.image_url IS NOT NULL), '[]') AS images
+             FROM items i
+             LEFT JOIN item_images img ON i.item_id = img.item_id
+             WHERE i.item_id = $1
+             GROUP BY i.item_id`,
             [id]
         );
 
-        // Check if any rows were returned
         if (itemDetails.rowCount === 0) {
             return res.status(404).json({
                 success: false,
@@ -271,22 +275,11 @@ export const singleItem = async (req, res) => {
             });
         }
 
-        const item = itemDetails.rows[0];
-        
-        // Get associated images
-        const imagesResult = await pool.query(
-            `SELECT image_id, image_url FROM item_images WHERE item_id = $1`,
-            [id]
-        );
-        
-        // Add images to the response
-        item.images = imagesResult.rows;
-
         return res.status(200).json({
             success: true,
-            item: item
+            item: itemDetails.rows[0] // Contains item details & images array
         });
-        
+
     } catch (err) {
         console.error("Error while fetching item details:", err);
         return res.status(500).json({
@@ -296,6 +289,7 @@ export const singleItem = async (req, res) => {
         });
     }
 };
+
 
 // export const  editItem  = async(req, res) =>{
 //     try{
@@ -411,44 +405,36 @@ export const deleteItem = async (req, res) => {
 export const getDashboard = async (req, res) => {
     try {
         const foundItemLatest = await pool.query(
-            `SELECT * FROM items 
-            WHERE status = 'found' 
-            ORDER BY time_entered 
-            LIMIT 8`
+            `SELECT i.*, 
+                    COALESCE(json_agg(img.image_url) FILTER (WHERE img.image_url IS NOT NULL), '[]') AS images 
+             FROM items i
+             LEFT JOIN item_images img ON i.item_id = img.item_id
+             WHERE i.status = 'found' 
+             GROUP BY i.item_id
+             ORDER BY i.time_entered 
+             LIMIT 8`
         );
-
-        if (foundItemLatest.rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "Unable to retrieve data"
-            });
-        }
-        
 
         const lostItemLatest = await pool.query(
-            `SELECT * from items
-            WHERE status = 'lost'
-            ORDER BY time_entered
-            LIMIT 8`
+            `SELECT i.*, 
+                    COALESCE(json_agg(img.image_url) FILTER (WHERE img.image_url IS NOT NULL), '[]') AS images 
+             FROM items i
+             LEFT JOIN item_images img ON i.item_id = img.item_id
+             WHERE i.status = 'lost' 
+             GROUP BY i.item_id
+             ORDER BY i.time_entered 
+             LIMIT 8`
         );
 
-        if(lostItemLatest.rowCount === 0){
-            return res.status(404).json({
-                success:false,
-                message: "Unable to retrive data"
-            });
-        }
-
         return res.status(200).json({
-            foundItems : foundItemLatest.rows,
-            lostItems : lostItemLatest.rows     
-        })
-     
+            foundItems: foundItemLatest.rows,
+            lostItems: lostItemLatest.rows
+        });
 
-        
     } catch (error) {
-        console.error("error while retriving dash detials" ,error);
+        console.error("Error while retrieving dashboard details", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 };
+
 

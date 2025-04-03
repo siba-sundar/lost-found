@@ -1,9 +1,14 @@
-import {createBrowserRouter, RouterProvider} from  "react-router-dom"
+import {createBrowserRouter, RouterProvider, Navigate, replace} from  "react-router-dom"
 
-
+// user specific imports
 import UserLayout from './layouts/UserLayout'
-import Home from "./components/Home"
+// import Home from "./components/Home"
+import ItemsDashboard from "./components/user/Dash"
 import FoundItemForm from "./components/FoundItem"
+import ItemDetails from  "./components/common/InputForm.jsx"
+
+
+
 
 
 import LoginPage from "./pages/Login"
@@ -11,6 +16,10 @@ import Signup from "./pages/Signup"
 
 function App() {
   const router = createBrowserRouter([
+    {
+      path:"/",
+      element:<Navigate to="/login" replace/>
+    },
     {
       path:"/login",
       element:<LoginPage/>
@@ -21,16 +30,20 @@ function App() {
       element : <Signup/>
     },
     {
-      path:"/",
+      path:"/user",
       element:<UserLayout/>,
       children:[
         {
-          path:"/user/home",
-          element:<Home/>
+          path:"home",
+          element:<ItemsDashboard/>
         },
         {
-          path:"/user/foundItem",
+          path:"foundItem",
           element:<FoundItemForm/>
+        },
+        {
+          path:"add-item",
+          element:<ItemDetails/>
         }
       ]
     }
