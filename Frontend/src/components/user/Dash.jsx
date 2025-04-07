@@ -43,7 +43,7 @@ const ItemsDashboard = () => {
 
     // Item card component for both found and lost items
     const ItemCard = ({ item }) => (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:scale-105 flex">
+        <div className="bg-[#171717] rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:scale-105 flex">
             <div className="relative h-40 bg-gray-200">
                 {item.images && item.images.length > 0 ? (
                     <img
@@ -52,15 +52,15 @@ const ItemsDashboard = () => {
                         className="w-full h-full object-cover"
                     />
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-500">
+                    <div className="w-full h-full flex items-center justify-center text-white">
                         No image available
                     </div>
                 )}
             </div>
             <div className="p-4">
-                <h3 className="text-lg font-semibold text-blue-800 mb-1 truncate">{item.item_name}</h3>
-                <p className="text-sm text-gray-600 mb-2 truncate">{item.location}</p>
-                <p className="text-xs text-gray-500">
+                <h3 className="text-lg font-semibold text-white mb-1 truncate">{item.item_name}</h3>
+                <p className="text-sm text-white mb-2 truncate">{item.location}</p>
+                <p className="text-xs text-white">
                     {formatDate(item.date_found || item.time_entered)}
                 </p>
             </div>
@@ -72,14 +72,14 @@ const ItemsDashboard = () => {
         <div className="mb-8">
             <div className="flex justify-between items-center mb-4">
                 <h2 className={`text-xl font-bold ${color}`}>{title}</h2>
-                <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                <button className="text-white hover:text-blue-800 text-sm font-medium">
                     View All
                 </button>
             </div>
 
             {items.length === 0 ? (
-                <div className="bg-gray-50 rounded-lg p-8 text-center">
-                    <p className="text-gray-500">No {title.toLowerCase()} items to display</p>
+                <div className="bg-black rounded-lg p-8 text-center">
+                    <p className="text-white">No {title.toLowerCase()} items to display</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -94,7 +94,7 @@ const ItemsDashboard = () => {
     if (loading) {
         return (
             <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
             </div>
         );
     }
@@ -114,19 +114,19 @@ const ItemsDashboard = () => {
     }
 
     return (
-        <div className="max-w-6xl mx-auto px-4 py-8 min-h-screen">
-            <h1 className="text-2xl font-bold text-blue-900 mb-6">Lost & Found Dashboard</h1>
+        <div className=" mx-auto px-4 py-8 min-h-screen bg-[#0a0a0a]">
+            <h1 className="text-2xl font-bold text-white mb-6">Lost & Found Dashboard</h1>
 
             <Section
                 title="Recently Found Items"
                 items={data.foundItems}
-                color="text-blue-700"
+                color="text-white"
             />
 
             <Section
                 title="Recently Lost Items"
                 items={data.lostItems}
-                color="text-blue-700"
+                color="text-white"
             />
         </div>
     );

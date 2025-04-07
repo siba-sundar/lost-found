@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useChatContext } from '../context/ChatContext';
-import ChatRoomsList from './ChatRoomsList';
-import MessagesList from './MessagesList';
-import ChatInput from './ChatInput';
-import NewRoomModal from './NewRoomModal';
+import ChatRoomsList from '../utils/ChatUtils.jsx';
+import MessagesList from '../utils/ChatUtils.jsx';
+import ChatInput from '../utils/ChatUtils.jsx';
+import NewRoomModal from '../utils/ChatUtils.jsx';
 
 const Chat = () => {
   const { 

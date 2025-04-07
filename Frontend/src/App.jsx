@@ -6,6 +6,7 @@ import UserLayout from './layouts/UserLayout'
 import ItemsDashboard from "./components/user/Dash"
 import FoundItemForm from "./components/FoundItem"
 import ItemDetails from  "./components/common/InputForm.jsx"
+import Chat from "./components/common/chat.jsx"
 
 
 
@@ -63,6 +64,10 @@ function App() {
         {
           path:"add-item",
           element:<ItemDetails/>
+        },
+        {
+          path:"chat",
+          element:<Chat/>
         }
       ]
     }
