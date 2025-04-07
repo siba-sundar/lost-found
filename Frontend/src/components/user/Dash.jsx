@@ -43,7 +43,7 @@ const ItemsDashboard = () => {
 
     // Item card component for both found and lost items
     const ItemCard = ({ item }) => (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:scale-105">
+        <div className="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:scale-105 flex">
             <div className="relative h-40 bg-gray-200">
                 {item.images && item.images.length > 0 ? (
                     <img
@@ -114,7 +114,7 @@ const ItemsDashboard = () => {
     }
 
     return (
-        <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto px-4 py-8 min-h-screen">
             <h1 className="text-2xl font-bold text-blue-900 mb-6">Lost & Found Dashboard</h1>
 
             <Section

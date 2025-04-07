@@ -107,7 +107,7 @@ const AddItemForm = () => {
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-md">
+    <div className="w-full max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-md min-h-screen">
       <h1 className="text-2xl font-bold text-blue-800 mb-6">Add New Item</h1>
       
       {error && (

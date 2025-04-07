@@ -1,6 +1,38 @@
 import pool from "../config/db";
 
 
+
+export const getUserDetails = async (req, res)=>{
+    try{
+        const userId = req.user;
+
+        const userDetails = await pool.query(
+            "SELECT user_id, name, email_id FROM users WHER user_id = $1", 
+            [userId]
+        );
+
+        if(userDetails.rows.length === 0){
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "User details fetched successfully",
+            user: userDetails.rows[0]
+        });    
+    }catch(err){
+        console.log('Error fetching user details', err.stack);
+        return res.status(500).json({
+            success: false,
+            message: "An error occurred while fetching user details",
+            error: err.message
+        });
+    }
+}
+
 // Edit User Details Function - remains mostly the same
 export const editDetails = async (req, res) => {
     try {

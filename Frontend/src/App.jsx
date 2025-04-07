@@ -9,7 +9,26 @@ import ItemDetails from  "./components/common/InputForm.jsx"
 
 
 
+// const ProtectedRoute = ({children}) => {
+//   const user = localStorage.getItem("user");
+//   const token = localStorage.getItem("token");
+// //           console.error('Error getting token:', error);
+// //           delete axios.defaults.headers.common['Authorization'];
+//   if(!user || !token){
+//     return <Navigate to="/login" replace/>
+//   }
+//   return children
+// });
 
+// const UserSpecificRoute = ({children}) => {
+//   const user = localStorage.getItem("user");
+//   const token = localStorage.getItem("token");
+
+//   if(!user || !token){
+//     return <Navigate to="/login" replace/>
+//   }
+//   return children
+// }
 
 import LoginPage from "./pages/Login"
 import Signup from "./pages/Signup"
