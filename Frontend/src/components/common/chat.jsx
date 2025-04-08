@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useChatContext } from '../context/ChatContext';
-import ChatRoomsList from '../utils/ChatUtils.jsx';
-import MessagesList from '../utils/ChatUtils.jsx';
-import ChatInput from '../utils/ChatUtils.jsx';
-import NewRoomModal from '../utils/ChatUtils.jsx';
+import { useChatContext } from '../chat/ChatContext.jsx';
+import ChatRoomsList from '../chat/ChatRoomsList.jsx';
+import MessagesList from '../chat/MessagesList.jsx';
+import ChatInput from '../chat/ChatInput.jsx';
+import NewRoomModal from '../chat/NewRoomModal.jsx';
 
 const Chat = () => {
   const { 
@@ -11,14 +11,14 @@ const Chat = () => {
     currentRoom, 
     messages, 
     loading, 
-    fetchChatRooms 
+    fetchRooms 
   } = useChatContext();
   
   const [showNewRoomModal, setShowNewRoomModal] = useState(false);
   
   // Fetch chat rooms on component mount
   useEffect(() => {
-    fetchChatRooms();
+    fetchRooms();
   }, []);
   
   return (

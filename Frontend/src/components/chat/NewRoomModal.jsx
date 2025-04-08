@@ -1,6 +1,6 @@
 // 
 import React, { useState, useEffect } from 'react';
-import { useChatContext } from '../context/ChatContext';
+import { useChatContext } from './ChatContext';
 import axios from 'axios';
 
 const NewRoomModal = ({ onClose }) => {
@@ -16,9 +16,9 @@ const NewRoomModal = ({ onClose }) => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('/api/auth/users', {
+        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/auth/users`, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
+            Authorization: `Bearer ${sessionStorage.getItem('accessToken')}`
           }
         });
         setUsers(response.data);

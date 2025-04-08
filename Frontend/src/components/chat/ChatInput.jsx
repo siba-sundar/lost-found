@@ -1,6 +1,6 @@
 // ChatInput.jsx
 import React, { useState } from 'react';
-import { useChatContext } from '../context/ChatContext';
+import { useChatContext } from './ChatContext';
 
 const ChatInput = () => {
   const [message, setMessage] = useState('');

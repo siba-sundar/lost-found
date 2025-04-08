@@ -1,11 +1,13 @@
-// ChatRoomsList.jsx
 import React from 'react';
-import { useChatContext } from '../context/ChatContext';
+import { useChatContext } from './ChatContext';
 
 const ChatRoomsList = ({ rooms, loading }) => {
   const { joinRoom, currentRoom } = useChatContext();
   
-  if (loading && rooms.length === 0) {
+  // Check if rooms is undefined or not an array
+  const validRooms = Array.isArray(rooms) ? rooms : [];
+  
+  if (loading && validRooms.length === 0) {
     return (
       <div className="p-4">
         <div className="animate-pulse space-y-3">
@@ -19,13 +21,13 @@ const ChatRoomsList = ({ rooms, loading }) => {
   
   return (
     <div className="overflow-y-auto h-full">
-      {rooms.length === 0 ? (
+      {validRooms.length === 0 ? (
         <div className="p-4 text-center text-gray-500">
           <p>No chats yet</p>
         </div>
       ) : (
         <ul>
-          {rooms.map((room) => (
+          {validRooms.map((room) => (
             <li 
               key={room.id}
               onClick={() => joinRoom(room)}
