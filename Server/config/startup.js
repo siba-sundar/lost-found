@@ -1,45 +1,41 @@
 import pool from "./db.js"
 
+
 export const createTables = async () => {
     const userQueryText = `
-    
-CREATE TABLE IF NOT EXISTS users (
-    user_id SERIAL PRIMARY KEY,
-    college_id VARCHAR(255) NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    phone_number NUMERIC(15,0),
-    email_id VARCHAR(255) UNIQUE NOT NULL,
-    profile_picture TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-   
-);
+    CREATE TABLE IF NOT EXISTS users (
+        user_id SERIAL PRIMARY KEY,
+        college_id VARCHAR(255) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        phone_number NUMERIC(15,0),
+        email_id VARCHAR(255) UNIQUE NOT NULL,
+        profile_picture TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
     `;
 
     const authQueryTable = `
     -- Now create the authentication tables that reference users
-CREATE TABLE IF NOT EXISTS auth_login (
-    user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
-    login_type VARCHAR(50) NOT NULL,
-    PRIMARY KEY (user_id, login_type)
-);
+    CREATE TABLE IF NOT EXISTS auth_login (
+        user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
+        login_type VARCHAR(50) NOT NULL,
+        PRIMARY KEY (user_id, login_type)
+    );
 
-CREATE TABLE IF NOT EXISTS email_password_auth (
-    user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
-    password VARCHAR(255) ,
-    PRIMARY KEY (user_id)
-);
+    CREATE TABLE IF NOT EXISTS email_password_auth (
+        user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
+        password VARCHAR(255) ,
+        PRIMARY KEY (user_id)
+    );
 
-CREATE TABLE IF NOT EXISTS oauth_auth (
-    user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
-    oauth_provider VARCHAR(50) ,
-    oauth_id VARCHAR(255) ,
-    PRIMARY KEY (user_id, oauth_provider)
-);`
-
+    CREATE TABLE IF NOT EXISTS oauth_auth (
+        user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
+        oauth_provider VARCHAR(50) ,
+        oauth_id VARCHAR(255) ,
+        PRIMARY KEY (user_id, oauth_provider)
+    );`;
 
     const itemsQuery = `
-
-
     -- Table for storing item details (general information about an item)
     CREATE TABLE IF NOT EXISTS items (
         item_id SERIAL PRIMARY KEY,
@@ -56,31 +52,58 @@ CREATE TABLE IF NOT EXISTS oauth_auth (
     
     -- Table for storing images associated with an item
     CREATE TABLE IF NOT EXISTS item_images (
-        image_id SERIAL PRIMARY KEY,      -- Unique ID for the image
-        item_id INT REFERENCES items(item_id) ON DELETE CASCADE,  -- Link to items table
-        image_url VARCHAR(255) NOT NULL,  -- URL of the image (Cloudinary or other storage service)
+        image_id SERIAL PRIMARY KEY,
+        item_id INT REFERENCES items(item_id) ON DELETE CASCADE,
+        image_url VARCHAR(255) NOT NULL,
         time_entered TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );`
-
+    );`;
 
     const requestQuery = `
     -- found request tabel 
-CREATE TABLE IF NOT EXISTS item_found(
-   request_id SERIAL PRIMARY KEY,
-    item_name VARCHAR(255) NOT NULL,
-    description TEXT,
-    found_by INT REFERENCES users(user_id) DEFAULT NULL,
-    location VARCHAR(255),
-    date_found DATE,
-    time_found TIME,
-    file_path TEXT,
-    time_entered TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    
-)
+    CREATE TABLE IF NOT EXISTS item_found(
+       request_id SERIAL PRIMARY KEY,
+        item_name VARCHAR(255) NOT NULL,
+        description TEXT,
+        found_by INT REFERENCES users(user_id) DEFAULT NULL,
+        location VARCHAR(255),
+        date_found DATE,
+        time_found TIME,
+        file_path TEXT,
+        time_entered TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );`;
 
+    const chatQuery = `
+    -- Table for storing chat connections between users
+    CREATE TABLE IF NOT EXISTS chats (
+        chat_id SERIAL PRIMARY KEY,
+        item_id INT REFERENCES items(item_id) ON DELETE CASCADE,
+        user_one INT REFERENCES users(user_id) ON DELETE CASCADE,
+        user_two INT REFERENCES users(user_id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        status VARCHAR(20) CHECK (status IN ('pending', 'active', 'blocked', 'closed')) DEFAULT 'pending',
+        UNIQUE(item_id, user_one, user_two)
+    );
 
+    -- Table for storing individual messages
+    CREATE TABLE IF NOT EXISTS messages (
+        message_id SERIAL PRIMARY KEY,
+        chat_id INT REFERENCES chats(chat_id) ON DELETE CASCADE,
+        sender_id INT REFERENCES users(user_id) ON DELETE CASCADE,
+        message TEXT NOT NULL,
+        read BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
 
-    `
+    -- Table for tracking chat requests
+    CREATE TABLE IF NOT EXISTS chat_requests (
+        request_id SERIAL PRIMARY KEY,
+        item_id INT REFERENCES items(item_id) ON DELETE CASCADE,
+        requester_id INT REFERENCES users(user_id) ON DELETE CASCADE,
+        responder_id INT REFERENCES users(user_id) ON DELETE CASCADE,
+        request_message TEXT,
+        status VARCHAR(20) CHECK (status IN ('pending', 'accepted', 'declined')) DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );`;
 
     try {
         await pool.query(userQueryText);
@@ -89,14 +112,11 @@ CREATE TABLE IF NOT EXISTS item_found(
         console.log("Auth tables created");
         await pool.query(itemsQuery);
         console.log("Items tables created");
-        await pool.query(requestQuery)
-        console.log("Request table created ")
+        await pool.query(requestQuery);
+        console.log("Request table created");
+        await pool.query(chatQuery);
+        console.log("Chat tables created");
     } catch (error) {
-        console.log("Error while creating user table : ", error);
+        console.log("Error while creating tables: ", error);
     }
-
-
-
-
 };
-
