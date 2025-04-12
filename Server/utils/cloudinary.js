@@ -1,7 +1,5 @@
 import cloudinary from 'cloudinary';
-import fs from "fs"
-
-
+import fs from 'fs';
 
 // Cloudinary configuration
 cloudinary.config({
@@ -13,21 +11,28 @@ cloudinary.config({
 // Function to upload to Cloudinary
 export const uploadToCloudinary = async (filePath) => {
   try {
-    if(!filePath){
-      return ("No fie path found")
+    if (!filePath) {
+      throw new Error("No file path found");
+    }
+    
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`File not found at path: ${filePath}`);
     }
 
-    const result = await cloudinary.uploader.upload(filePath);
-    const url = cloudinary.url(result.public_id, {
-      transformation: [
-        { quality: "auto", fetch_format: "auto" },
-        { width: 1200, height: 1200 }
-      ]
+    // Upload file to Cloudinary
+    const result = await cloudinary.uploader.upload(filePath, {
+      resource_type: 'auto', // Auto-detect resource type
+      quality: 'auto',
+      fetch_format: 'auto',
+      width: 1200,
+      height: 1200,
+      crop: 'limit', // Resize to fit within these dimensions
     });
-    return url;
-    
+
+    // Return the secure URL
+    return result.secure_url;
   } catch (error) {
-    
     console.error("Error uploading to Cloudinary: ", error);
     throw error;
   }

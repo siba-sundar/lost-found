@@ -1,216 +1,303 @@
-import pool from "../config/db.js";
+import pool from '../config/db.js';
 
-export const createChatRoom = async (req, res) => {
-  const { name, participants } = req.body;
-  const userId = req.user.id; // Assuming you have authentication middleware
+// Create a chat request
+export const createChatRequest = async (req, res) => {
+  const { itemId, requesterId, responderId, requestMessage } = req.body;
+  
+  try {
+    // Check if a request already exists
+    const checkQuery = `
+      SELECT * FROM chat_requests
+      WHERE item_id = $1 AND requester_id = $2 AND responder_id = $3
+    `;
+    const checkResult = await pool.query(checkQuery, [itemId, requesterId, responderId]);
+    
+    if (checkResult.rowCount > 0) {
+      return res.status(400).json({ message: 'Request already exists' });
+    }
+    
+    // Create new request
+    const insertQuery = `
+      INSERT INTO chat_requests
+      (item_id, requester_id, responder_id, request_message)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *
+    `;
+    const result = await pool.query(insertQuery, [itemId, requesterId, responderId, requestMessage]);
+    
+    res.status(201).json({
+      message: 'Chat request sent successfully',
+      request: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error creating chat request:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Get all chat requests for a user
+export const getChatRequests = async (req, res) => {
+  const userId = parseInt(req.params.userId);
+  console.log('Fetching chat requests for user:', userId);
+  
+  try {
+    const query = `
+      SELECT cr.*, 
+        i.item_name, i.description, i.location,
+        u.name as requester_name, u.profile_picture as requester_picture
+      FROM chat_requests cr
+      JOIN items i ON cr.item_id = i.item_id
+      JOIN users u ON cr.requester_id = u.user_id
+      WHERE cr.responder_id = $1 AND cr.status = 'pending'
+      ORDER BY cr.created_at DESC
+    `;
+    
+    const result = await pool.query(query, [userId]);
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('Error fetching chat requests:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Handle chat request (accept or decline)
+export const handleChatRequest = async (req, res) => {
+  const { requestId, action } = req.body;
+  
+  if (!['accepted', 'declined'].includes(action)) {
+    return res.status(400).json({ message: 'Invalid action' });
+  }
   
   try {
     // Start a transaction
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-      
-      // Create the chat room
-      const roomResult = await client.query(
-        'INSERT INTO chat_rooms (name) VALUES ($1) RETURNING id, name, created_at',
-        [name]
-      );
-      
-      const roomId = roomResult.rows[0].id;
-      
-      // Add the creator to participants
-      await client.query(
-        'INSERT INTO chat_participants (room_id, user_id) VALUES ($1, $2)',
-        [roomId, userId]
-      );
-      
-      // Add other participants if provided
-      if (participants && participants.length) {
-        for (const participantId of participants) {
-          if (participantId !== userId) {
-            await client.query(
-              'INSERT INTO chat_participants (room_id, user_id) VALUES ($1, $2)',
-              [roomId, participantId]
-            );
-          }
-        }
-      }
-      
-      await client.query('COMMIT');
-      
-      // Get room with participants
-      const participantsResult = await pool.query(
-        `SELECT u.id, u.username, u.email 
-         FROM chat_participants cp
-         JOIN users u ON cp.user_id = u.id
-         WHERE cp.room_id = $1`,
-        [roomId]
-      );
-      
-      const room = {
-        ...roomResult.rows[0],
-        participants: participantsResult.rows
-      };
-      
-      res.status(201).json(room);
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
+    await pool.query('BEGIN');
+    
+    // Update request status
+    const updateQuery = `
+      UPDATE chat_requests
+      SET status = $1
+      WHERE request_id = $2
+      RETURNING *
+    `;
+    const result = await pool.query(updateQuery, [action, requestId]);
+    
+    if (result.rowCount === 0) {
+      await pool.query('ROLLBACK');
+      return res.status(404).json({ message: 'Request not found' });
     }
+    
+    const request = result.rows[0];
+    
+    // If accepted, create a new chat
+    if (action === 'accepted') {
+      const chatQuery = `
+        INSERT INTO chats
+        (item_id, user_one, user_two, status)
+        VALUES ($1, $2, $3, 'active')
+        RETURNING *
+      `;
+      
+      const chatResult = await pool.query(
+        chatQuery, 
+        [request.item_id, request.requester_id, request.responder_id]
+      );
+      
+      await pool.query('COMMIT');
+      return res.status(200).json({ 
+        message: 'Chat request accepted',
+        chat: chatResult.rows[0]
+      });
+    }
+    
+    await pool.query('COMMIT');
+    res.status(200).json({ message: 'Chat request declined' });
   } catch (error) {
-    console.error("Error creating chat room:", error);
-    res.status(500).json({ message: "Failed to create chat room" });
+    await pool.query('ROLLBACK');
+    console.error('Error handling chat request:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
-export const getUserRooms = async (req, res) => {
-  const userId = req.user.id; // From auth middleware
+// Get all active chats for a user
+export const getUserChats = async (req, res) => {
+  const userId = parseInt(req.params.userId);
   
   try {
-    const result = await pool.query(
-      `SELECT cr.id, cr.name, cr.created_at,
-         (SELECT COUNT(*) FROM chat_messages WHERE room_id = cr.id) as message_count,
-         (SELECT COUNT(*) FROM chat_messages WHERE room_id = cr.id AND is_read = false AND sender_id != $1) as unread_count
-       FROM chat_rooms cr
-       JOIN chat_participants cp ON cr.id = cp.room_id
-       WHERE cp.user_id = $1
-       ORDER BY cr.updated_at DESC`,
-      [userId]
-    );
+    const query = `
+      SELECT c.*,
+        i.item_name, i.description,
+        CASE
+          WHEN c.user_one = $1 THEN c.user_two
+          ELSE c.user_one
+        END as other_user_id,
+        u.name as other_user_name,
+        u.profile_picture as other_user_picture,
+        (
+          SELECT message FROM messages 
+          WHERE chat_id = c.chat_id 
+          ORDER BY created_at DESC LIMIT 1
+        ) as last_message,
+        (
+          SELECT created_at FROM messages 
+          WHERE chat_id = c.chat_id 
+          ORDER BY created_at DESC LIMIT 1
+        ) as last_message_time,
+        (
+          SELECT COUNT(*) FROM messages 
+          WHERE chat_id = c.chat_id AND read = false AND sender_id != $1
+        ) as unread_count
+      FROM chats c
+      JOIN items i ON c.item_id = i.item_id
+      JOIN users u ON (
+        CASE
+          WHEN c.user_one = $1 THEN c.user_two
+          ELSE c.user_one
+        END = u.user_id
+      )
+      WHERE (c.user_one = $1 OR c.user_two = $1)
+      AND c.status = 'active'
+      ORDER BY last_message_time DESC NULLS LAST
+    `;
     
-    res.json(result.rows);
+    const result = await pool.query(query, [userId]);
+    res.status(200).json(result.rows);
   } catch (error) {
-    console.error("Error fetching user rooms:", error);
-    res.status(500).json({ message: "Failed to fetch chat rooms" });
+    console.error('Error fetching user chats:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
-export const getRoomMessages = async (req, res) => {
-  const { roomId } = req.params;
-  const userId = req.user.id;
+// Update getChatMessages in chat.controller.js
+export const getChatMessages = async (req, res) => {
+  const { chatId } = req.params;
+  const userId = parseInt(req.query.userId);
   
   try {
-    // Check if user is a participant of this room
-    const participantCheck = await pool.query(
-      'SELECT 1 FROM chat_participants WHERE room_id = $1 AND user_id = $2',
-      [roomId, userId]
-    );
+    // First verify that the user is part of this chat
+    const verifyQuery = `
+      SELECT c.* FROM chats c
+      WHERE c.chat_id = $1 AND (c.user_one = $2 OR c.user_two = $2) AND c.status = 'active'
+    `;
+    const verifyResult = await pool.query(verifyQuery, [chatId, userId]);
     
-    if (participantCheck.rows.length === 0) {
-      return res.status(403).json({ message: "Access denied to this chat room" });
+    if (verifyResult.rowCount === 0) {
+      return res.status(403).json({ message: 'Access denied or chat is not active' });
     }
     
     // Get messages
-    const messagesResult = await pool.query(
-      `SELECT cm.id, cm.content, cm.created_at, cm.is_read,
-         json_build_object('id', u.id, 'username', u.username) as sender
-       FROM chat_messages cm
-       JOIN users u ON cm.sender_id = u.id
-       WHERE cm.room_id = $1
-       ORDER BY cm.created_at ASC`,
-      [roomId]
-    );
+    const messagesQuery = `
+      SELECT m.*, u.name as sender_name, u.profile_picture as sender_picture
+      FROM messages m
+      JOIN users u ON m.sender_id = u.user_id
+      WHERE m.chat_id = $1
+      ORDER BY m.created_at ASC
+    `;
+    const messages = await pool.query(messagesQuery, [chatId]);
     
     // Mark messages as read
-    await pool.query(
-      'UPDATE chat_messages SET is_read = true WHERE room_id = $1 AND sender_id != $2 AND is_read = false',
-      [roomId, userId]
-    );
+    const updateQuery = `
+      UPDATE messages
+      SET read = true
+      WHERE chat_id = $1 AND sender_id != $2 AND read = false
+    `;
+    await pool.query(updateQuery, [chatId, userId]);
     
-    res.json(messagesResult.rows);
+    res.status(200).json(messages.rows);
   } catch (error) {
-    console.error("Error fetching room messages:", error);
-    res.status(500).json({ message: "Failed to fetch messages" });
+    console.error('Error fetching chat messages:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
-export const sendMessage = async (req, res) => {
-  const { roomId, content } = req.body;
-  const userId = req.user.id;
+// Save a message
+export const saveMessage = async (req, res) => {
+  const { chatId, senderId, message } = req.body;
   
   try {
-    // Check if user is a participant
-    const participantCheck = await pool.query(
-      'SELECT 1 FROM chat_participants WHERE room_id = $1 AND user_id = $2',
-      [roomId, userId]
-    );
+    // Verify sender is part of the chat
+    const verifyQuery = `
+      SELECT * FROM chats WHERE chat_id = $1 AND (user_one = $2 OR user_two = $2) AND status = 'active'
+    `;
+    const verifyResult = await pool.query(verifyQuery, [chatId, senderId]);
     
-    if (participantCheck.rows.length === 0) {
-      return res.status(403).json({ message: "Cannot send message to this room" });
+    if (verifyResult.rowCount === 0) {
+      return res.status(403).json({ message: 'Access denied or chat is not active' });
     }
     
-    // Insert the message
-    const result = await pool.query(
-      `INSERT INTO chat_messages (room_id, sender_id, content)
-       VALUES ($1, $2, $3)
-       RETURNING id, content, created_at`,
-      [roomId, userId, content]
-    );
+    // Save message
+    const insertQuery = `
+      INSERT INTO messages (chat_id, sender_id, message)
+      VALUES ($1, $2, $3)
+      RETURNING *
+    `;
+    const result = await pool.query(insertQuery, [chatId, senderId, message]);
     
-    // Update the room's updated_at timestamp
-    await pool.query(
-      'UPDATE chat_rooms SET updated_at = CURRENT_TIMESTAMP WHERE id = $1',
-      [roomId]
-    );
-    
-    // Get sender info
-    const userResult = await pool.query(
-      'SELECT id, username FROM users WHERE id = $1',
-      [userId]
-    );
-    
-    const message = {
-      ...result.rows[0],
-      sender: userResult.rows[0],
-      is_read: false
-    };
-    
-    // Emit the message through Socket.io
-    const io = req.app.get('io');
-    io.to(roomId).emit('receive_message', message);
-    
-    res.status(201).json(message);
+    res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error("Error sending message:", error);
-    res.status(500).json({ message: "Failed to send message" });
+    console.error('Error saving message:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
-// Function to save messages coming from socket.io
-export const saveChatMessage = async (messageData) => {
-  const { roomId, senderId, content } = messageData;
+// Close a chat
+export const closeChat = async (req, res) => {
+  const { chatId, userId } = req.body;
   
   try {
-    // Insert the message
-    const result = await pool.query(
-      `INSERT INTO chat_messages (room_id, sender_id, content)
-       VALUES ($1, $2, $3)
-       RETURNING id, content, created_at`,
-      [roomId, senderId, content]
-    );
+    // Verify user is part of the chat
+    const verifyQuery = `
+      SELECT * FROM chats WHERE chat_id = $1 AND (user_one = $2 OR user_two = $2)
+    `;
+    const verifyResult = await pool.query(verifyQuery, [chatId, userId]);
     
-    // Update the room's updated_at timestamp
-    await pool.query(
-      'UPDATE chat_rooms SET updated_at = CURRENT_TIMESTAMP WHERE id = $1',
-      [roomId]
-    );
+    if (verifyResult.rowCount === 0) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
     
-    // Get sender info
-    const userResult = await pool.query(
-      'SELECT id, username FROM users WHERE id = $1',
-      [senderId]
-    );
+    // Close the chat
+    const updateQuery = `
+      UPDATE chats SET status = 'closed' WHERE chat_id = $1
+    `;
+    await pool.query(updateQuery, [chatId]);
     
-    return {
-      ...result.rows[0],
-      sender: userResult.rows[0],
-      is_read: false,
-      roomId
-    };
+    res.status(200).json({ message: 'Chat closed successfully' });
   } catch (error) {
-    console.error("Error saving message:", error);
-    throw error;
+    console.error('Error closing chat:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+// Add this to your chat.controller.js
+export const checkChatRequest = async (req, res) => {
+  const { itemId, userId } = req.params;
+  
+  try {
+    // Check for existing request
+    const requestQuery = `
+      SELECT cr.*, 
+        CASE WHEN cr.status = 'accepted' THEN c.chat_id ELSE NULL END as chat_id
+      FROM chat_requests cr
+      LEFT JOIN chats c ON (
+        c.item_id = cr.item_id AND 
+        ((c.user_one = cr.requester_id AND c.user_two = cr.responder_id) OR
+         (c.user_one = cr.responder_id AND c.user_two = cr.requester_id))
+      )
+      WHERE cr.item_id = $1 
+      AND cr.requester_id = $2
+      ORDER BY cr.created_at DESC
+      LIMIT 1
+    `;
+    
+    const result = await pool.query(requestQuery, [itemId, userId]);
+    
+    if (result.rowCount > 0) {
+      return res.status(200).json({ request: result.rows[0] });
+    }
+    
+    res.status(200).json({ request: null });
+  } catch (error) {
+    console.error('Error checking chat request:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };

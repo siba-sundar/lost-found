@@ -1,9 +1,10 @@
 import { useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../components/utils/AuthContext.jsx";
 
 const Signup = () => {
     const navigate = useNavigate();
+    const { signup, error, setError, loading, isAuthenticated } = useAuth();
     
     // User data state
     const [formData, setFormData] = useState({
@@ -16,8 +17,6 @@ const Signup = () => {
     });
     
     // UI state
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
     const [profilePicture, setProfilePicture] = useState(null);
     const [profilePreview, setProfilePreview] = useState(null);
 
@@ -80,52 +79,12 @@ const Signup = () => {
             return;
         }
         
-        setLoading(true);
+        // Call the signup function from AuthContext
+        const result = await signup(formData, profilePicture);
         
-        try {
-            // Create form data if there's profile picture
-            let requestData = { ...formData };
-            delete requestData.confirmPassword;
-            
-            if (profilePicture) {
-                // Convert the image to base64 for sending in JSON
-                // Note: For large files, a multipart form approach would be better
-                const reader = new FileReader();
-                reader.readAsDataURL(profilePicture);
-                reader.onload = async () => {
-                    requestData.profile_picture = reader.result;
-                    await submitData(requestData);
-                };
-            } else {
-                await submitData(requestData);
-            }
-        } catch (err) {
-            setLoading(false);
-            setError(err.response?.data?.message || "An error occurred during signup");
-            console.error("Signup error:", err);
-        }
-    };
-    
-    const submitData = async (data) => {
-        try {
-            const response = await axios.post('http://localhost:4001/api/auth/signup', data);
-            
-            // Store tokens if signup was successful
-            if (response.data.accessToken) {
-                localStorage.setItem('accessToken', response.data.accessToken);
-                // Refresh token should be handled by HttpOnly cookie on the backend
-            }
-            
-            setLoading(false);
-            
-            // Redirect to login or dashboard
+        if (result.success) {
             alert("Signup successful!");
-            navigate('/login'); // Redirect to login page or dashboard
-            
-        } catch (err) {
-            setLoading(false);
-            setError(err.response?.data?.message || "An error occurred during signup");
-            console.error("Signup error:", err);
+            navigate('/login');
         }
     };
 

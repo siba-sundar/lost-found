@@ -1,94 +1,116 @@
 import pool from "../config/db.js";
-import cloudinary from 'cloudinary';
+import { uploadToCloudinary } from '../utils/cloudinary.js';
+import fs from 'fs';
 
 
 
-// Add item controller with image handling
+// Add item controller 
 export const addItem = async (req, res) => {
-    // First handle file uploads with Multer
-    upload(req, res, async (err) => {
-        if (err) {
-            return res.status(400).json({ success: false, message: 'Error uploading images', error: err });
+    try {
+        // Req.files will be an array of uploaded files thanks to multer middleware
+        const files = req.files || [];
+        
+        if (files.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "At least one image is required"
+            });
         }
 
-        try {
-            const { itemName, description, location, dateFound, timeFound, type, token } = req.body;
+        if (files.length > 3) {
+            return res.status(400).json({
+                success: false,
+                message: "Maximum 3 images allowed"
+            });
+        }
 
-            // Validate required fields
-            if (!itemName || !description || !location || !dateFound || !timeFound) {
-                return res.status(400).json({
-                    success: false,
-                    message: "All details are required"
+        const { itemName, description, location, dateFound, timeFound, type } = req.body;
+        const { userId } = req.user;
+
+        // Validate required fields
+        if (!itemName || !description || !location || !dateFound || !timeFound) {
+            return res.status(400).json({
+                success: false,
+                message: "All details are required"
+            });
+        }
+
+        // Get user ID from the request (set by authenticateToken middleware)
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "User not authenticated"
+            });
+        }
+
+        // SQL query for inserting the item
+        let query;
+        let values;
+        if (type === "found") {
+            query = `
+                INSERT INTO items (item_name, description, found_by, location, date_found, time_found, status)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                RETURNING item_id, item_name;
+            `;
+            values = [itemName, description, userId, location, dateFound, timeFound, 'found'];
+        } else if (type === "lost") {
+            query = `
+                INSERT INTO items (item_name, description, lost_by, location, date_found, time_found, status)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                RETURNING item_id, item_name;
+            `;
+            values = [itemName, description, userId, location, dateFound, timeFound, 'lost'];
+        } else {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid item type. Only 'found' or 'lost' are allowed"
+            });
+        }
+
+        // Insert the item into the database
+        const result = await pool.query(query, values);
+        const itemId = result.rows[0].item_id;
+
+        // Handle image uploads to Cloudinary
+        const imageUrls = [];
+        
+        for (const file of files) {
+            try {
+                // Upload to Cloudinary
+                const imageUrl = await uploadToCloudinary(file.path);
+                imageUrls.push(imageUrl);
+                
+                // Delete the temp file after upload
+                fs.unlink(file.path, (err) => {
+                    if (err) console.error(`Failed to delete temp file: ${file.path}`, err);
                 });
-            }
-
-            // Extract user details from token
-            const userDetails = extractUserFromToken(token, process.env.JWT_SECRET);
-            if (!userDetails) {
-                return res.status(401).json({
-                    success: false,
-                    message: "Invalid token or user not authenticated"
-                });
-            }
-
-            // SQL query for inserting the item
-            let query;
-            let values;
-            if (type === "found") {
-                query = `
-                    INSERT INTO items (item_name, description, found_by, location, date_found, time_found, status)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7)
-                    RETURNING item_id, item_name;
-                `;
-                values = [itemName, description, userDetails.userID, location, dateFound, timeFound, 'found'];
-            } else if (type === "lost") {
-                query = `
-                    INSERT INTO items (item_name, description, lost_by, location, date_found, time_found, status)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7)
-                    RETURNING item_id, item_name;
-                `;
-                values = [itemName, description, userDetails.userID, location, dateFound, timeFound, 'lost'];
-            } else {
-                return res.status(400).json({
-                    success: false,
-                    message: "Invalid item type. Only 'found' or 'lost' are allowed"
-                });
-            }
-
-            // Insert the item into the database
-            const result = await pool.query(query, values);
-            const itemId = result.rows[0].item_id;
-
-            // Handle image uploads to Cloudinary
-            const imageUploadPromises = req.files.map(file => uploadToCloudinary(file.path));
-            const imageUrls = await Promise.all(imageUploadPromises);
-
-            // Insert image URLs into item_images table
-            const imageInsertPromises = imageUrls.map(url => {
-                return pool.query(`
+                
+                // Insert image URL into item_images table
+                await pool.query(`
                     INSERT INTO item_images (item_id, image_url)
                     VALUES ($1, $2);
-                `, [itemId, url]);
-            });
-
-            await Promise.all(imageInsertPromises);
-
-            return res.status(201).json({
-                success: true,
-                message: `${result.rows[0].item_name} added successfully with images`,
-                images: imageUrls  // Returning the uploaded image URLs
-            });
-
-        } catch (err) {
-            console.log("Error while adding items", err);
-            return res.status(500).json({
-                success: false,
-                message: "An error occurred while uploading, please try after some time."
-            });
+                `, [itemId, imageUrl]);
+                
+            } catch (uploadError) {
+                console.error("Error uploading to Cloudinary:", uploadError);
+                // Continue with other images even if one fails
+            }
         }
-    });
-};
 
+        return res.status(201).json({
+            success: true,
+            message: `${result.rows[0].item_name} added successfully with images`,
+            images: imageUrls  // Returning the uploaded image URLs
+        });
+
+    } catch (err) {
+        console.log("Error while adding items", err);
+        return res.status(500).json({
+            success: false,
+            message: "An error occurred while uploading, please try after some time."
+        });
+    }
+};
 
 
 

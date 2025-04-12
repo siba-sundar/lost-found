@@ -1,10 +1,13 @@
 import axios from "axios";
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const ItemsDashboard = () => {
     const [data, setData] = useState({ foundItems: [], lostItems: [] });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -21,6 +24,7 @@ const ItemsDashboard = () => {
 
                 // With Axios, the response data is in response.data, not requiring .json()
                 setData(response.data);
+                console.log(response.data);
                 setLoading(false);
             } catch (err) {
                 setError(err.message || 'An error occurred');
@@ -41,9 +45,16 @@ const ItemsDashboard = () => {
         });
     };
 
+    const handleCardClick = (item) => {
+        navigate(`/user/item/${item.item_id}`, { state: { item } });
+      };
+
     // Item card component for both found and lost items
     const ItemCard = ({ item }) => (
-        <div className="bg-[#171717] rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:scale-105 flex">
+        <div 
+            className="bg-[#171717] rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:scale-105 flex cursor-pointer"
+            onClick={() => handleCardClick(item)}  
+        >
             <div className="relative h-40 bg-gray-200">
                 {item.images && item.images.length > 0 ? (
                     <img
@@ -114,7 +125,7 @@ const ItemsDashboard = () => {
     }
 
     return (
-        <div className=" mx-auto px-4 py-8 min-h-screen bg-[#0a0a0a]">
+        <div className="mx-auto px-4 py-8 min-h-screen bg-[#0a0a0a]">
             <h1 className="text-2xl font-bold text-white mb-6">Lost & Found Dashboard</h1>
 
             <Section

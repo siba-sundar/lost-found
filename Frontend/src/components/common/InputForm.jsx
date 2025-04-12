@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera } from 'lucide-react';
+import { Camera, X } from 'lucide-react';
+import { useAuth } from '../utils/AuthContext.jsx'; 
 
 const AddItemForm = () => {
   const navigate = useNavigate();
+  const { currentUser, isAuthenticated } = useAuth(); // Use the auth context
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [previewImage, setPreviewImage] = useState(null);
+  const [previewImages, setPreviewImages] = useState([]);
   const [formData, setFormData] = useState({
     itemName: '',
     description: '',
@@ -13,6 +15,7 @@ const AddItemForm = () => {
     dateFound: '',
     timeFound: '',
     type: 'found', // Default value
+    images: []
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -26,20 +29,38 @@ const AddItemForm = () => {
   };
 
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormData(prevData => ({
-        ...prevData,
-        image: file
-      }));
-      
-      // Create image preview
+    const files = Array.from(e.target.files);
+    
+    // Check if adding these files would exceed the limit of 3
+    if (formData.images.length + files.length > 3) {
+      setError('Maximum 3 images allowed');
+      return;
+    }
+
+    // Store the new files
+    setFormData(prevData => ({
+      ...prevData,
+      images: [...prevData.images, ...files]
+    }));
+    
+    // Generate previews for all new images
+    const newPreviews = [];
+    files.forEach(file => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPreviewImage(reader.result);
+        setPreviewImages(prev => [...prev, reader.result]);
       };
       reader.readAsDataURL(file);
-    }
+    });
+  };
+
+  const removeImage = (index) => {
+    setFormData(prevData => ({
+      ...prevData,
+      images: prevData.images.filter((_, i) => i !== index)
+    }));
+    
+    setPreviewImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e) => {
@@ -50,13 +71,19 @@ const AddItemForm = () => {
     try {
       // Validate form
       if (!formData.itemName || !formData.description || !formData.location || 
-          !formData.dateFound || !formData.timeFound || !formData.image) {
-        throw new Error('All fields are required');
+          !formData.dateFound || !formData.timeFound || formData.images.length === 0) {
+        throw new Error('All fields are required, including at least one image');
       }
 
-      const token = localStorage.getItem('token');
-      if (!token) {
+      // Check authentication using the auth context
+      if (!isAuthenticated) {
         throw new Error('You must be logged in to add an item');
+      }
+
+      // Get token from sessionStorage (where AuthContext stores it)
+      const token = sessionStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('Authentication token not found');
       }
 
       // Create form data for file upload
@@ -67,14 +94,20 @@ const AddItemForm = () => {
       submitData.append('dateFound', formData.dateFound);
       submitData.append('timeFound', formData.timeFound);
       submitData.append('type', formData.type);
-      submitData.append('token', token);
-      submitData.append('image', formData.image);
+      
+      // Append each image with the same field name 'images'
+      formData.images.forEach(image => {
+        submitData.append('images', image);
+      });
 
-      // Submit the form
+      // Submit the form with authorization header
       const response = await fetch('http://localhost:4001/api/item/add', {
         method: 'POST',
         body: submitData,
-        // Note: Don't set Content-Type header when sending FormData
+        headers: {
+          'Authorization': `Bearer ${token}`
+          // Don't set Content-Type header when sending FormData
+        }
       });
 
       const data = await response.json();
@@ -92,8 +125,9 @@ const AddItemForm = () => {
         dateFound: '',
         timeFound: '',
         type: 'found',
+        images: []
       });
-      setPreviewImage(null);
+      setPreviewImages([]);
       
       // Redirect after 2 seconds
       setTimeout(() => {
@@ -101,6 +135,7 @@ const AddItemForm = () => {
       }, 2000);
     } catch (err) {
       setError(err.message);
+      console.error('Error adding item:', err);
     } finally {
       setIsSubmitting(false);
     }
@@ -119,6 +154,17 @@ const AddItemForm = () => {
       {success && (
         <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
           {success}
+        </div>
+      )}
+      
+      {!isAuthenticated && (
+        <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded">
+          Please log in to add an item. <button 
+            onClick={() => navigate('/login')} 
+            className="text-blue-600 underline hover:text-blue-800"
+          >
+            Go to Login
+          </button>
         </div>
       )}
       
@@ -232,42 +278,48 @@ const AddItemForm = () => {
             
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Upload Image
+                Upload Images (Up to 3)
               </label>
-              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                <div className="space-y-2 text-center">
-                  {previewImage ? (
-                    <div>
-                      <img 
-                        src={previewImage} 
-                        alt="Preview" 
-                        className="h-48 w-auto mx-auto object-cover rounded"
-                      />
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          setPreviewImage(null);
-                          setFormData(prev => ({...prev, image: null}));
-                        }}
-                        className="mt-2 text-sm text-red-600 hover:text-red-800"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ) : (
-                    <>
+              <div className="mt-1 border-2 border-gray-300 border-dashed rounded-md">
+                {/* Image Previews */}
+                {previewImages.length > 0 && (
+                  <div className="p-4 grid grid-cols-3 gap-2">
+                    {previewImages.map((preview, index) => (
+                      <div key={index} className="relative">
+                        <img 
+                          src={preview} 
+                          alt={`Preview ${index + 1}`} 
+                          className="h-24 w-24 object-cover rounded"
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 transform translate-x-1/3 -translate-y-1/3"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Upload control */}
+                {formData.images.length < 3 && (
+                  <div className="p-4 flex justify-center">
+                    <div className="space-y-2 text-center">
                       <Camera className="mx-auto h-12 w-12 text-gray-400" />
                       <div className="flex text-sm text-gray-600">
                         <label
                           htmlFor="image-upload"
                           className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none"
                         >
-                          <span>Upload a file</span>
+                          <span>Upload images</span>
                           <input
                             id="image-upload"
-                            name="image"
+                            name="images"
                             type="file"
                             accept="image/*"
+                            multiple
                             className="sr-only"
                             onChange={handleImageChange}
                           />
@@ -275,11 +327,11 @@ const AddItemForm = () => {
                         <p className="pl-1">or drag and drop</p>
                       </div>
                       <p className="text-xs text-gray-500">
-                        PNG, JPG, GIF up to 10MB
+                        PNG, JPG, GIF up to 5MB each ({3 - formData.images.length} remaining)
                       </p>
-                    </>
-                  )}
-                </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -295,7 +347,7 @@ const AddItemForm = () => {
           </button>
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !isAuthenticated}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-300"
           >
             {isSubmitting ? 'Submitting...' : 'Add Item'}

@@ -344,123 +344,123 @@ export const userSignup = async (req, res) => {
     }
 };
 
-    // Refresh token endpoint
-    export const refreshToken = async (req, res) => {
-        try {
-            // Get refresh token from cookies or request body
-            const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+// Refresh token endpoint
+export const refreshToken = async (req, res) => {
+    try {
+        const refreshToken = (req.cookies && req.cookies.refreshToken) || 
+                             (req.body && req.body.refreshToken);
 
-            if (!refreshToken) {
-                return res.status(401).json({
-                    success: false,
-                    message: "Refresh token is required"
-                });
-            }
-
-            // Verify refresh token validity in database
-            const tokenExists = await isRefreshTokenValid(refreshToken);
-            if (!tokenExists) {
-                return res.status(403).json({
-                    success: false,
-                    message: "Invalid or expired refresh token"
-                });
-            }
-
-            // Verify the token
-            jwt.verify(refreshToken, REFRESH_TOKEN_SECRET, async (err, decoded) => {
-                if (err) {
-                    // Remove invalid token from database
-                    await removeRefreshToken(refreshToken);
-
-                    return res.status(403).json({
-                        success: false,
-                        message: "Invalid refresh token",
-                        error: err.message
-                    });
-                }
-
-                // Generate a new access token
-                const tokenPayload = {
-                    userId: decoded.userId,
-                    email: decoded.email,
-                    collegeId: decoded.collegeId,
-                    role: decoded.role
-                };
-
-                const newAccessToken = jwt.sign(
-                    tokenPayload,
-                    JWT_SECRET,
-                    { expiresIn: TOKEN_EXPIRY }
-                );
-
-                // Generate a new refresh token (token rotation for better security)
-                const newRefreshToken = jwt.sign(
-                    tokenPayload,
-                    REFRESH_TOKEN_SECRET,
-                    { expiresIn: REFRESH_TOKEN_EXPIRY }
-                );
-
-                // Update refresh token in database
-                await updateRefreshToken(decoded.userId, refreshToken, newRefreshToken);
-
-                // Set new refresh token as HTTP-only cookie
-                res.cookie('refreshToken', newRefreshToken, {
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production',
-                    maxAge: 7 * 24 * 60 * 60 * 1000,
-                    sameSite: 'strict'
-                });
-
-                return res.status(200).json({
-                    success: true,
-                    message: "Token refreshed successfully",
-                    accessToken: newAccessToken,
-                    refreshToken: newRefreshToken // Only include this if you want the client to store it
-                });
-            });
-        } catch (err) {
-            console.error("Error refreshing token:", err.stack);
-            return res.status(500).json({
+        if (!refreshToken) {
+            return res.status(401).json({
                 success: false,
-                message: "An error occurred while refreshing token",
-                error: err.message
+                message: "Refresh token is required"
             });
         }
-    };
 
-    // Logout function
-    // Logout function
-    export const logout = async (req, res) => {
-        try {
-            const refreshToken = req.body.refreshToken;
+        // Verify refresh token validity in database
+        const tokenExists = await isRefreshTokenValid(refreshToken);
+        if (!tokenExists) {
+            return res.status(403).json({
+                success: false,
+                message: "Invalid or expired refresh token"
+            });
+        }
 
-            if (refreshToken) {
-                // Remove refresh token from database
+        // Verify the token
+        jwt.verify(refreshToken, REFRESH_TOKEN_SECRET, async (err, decoded) => {
+            if (err) {
+                // Remove invalid token from database
                 await removeRefreshToken(refreshToken);
+
+                return res.status(403).json({
+                    success: false,
+                    message: "Invalid refresh token",
+                    error: err.message
+                });
             }
 
-            // Clear the refresh token cookie
-            res.clearCookie('refreshToken');
+            // Generate a new access token
+            const tokenPayload = {
+                userId: decoded.userId,
+                email: decoded.email,
+                collegeId: decoded.collegeId,
+                role: decoded.role
+            };
+
+            const newAccessToken = jwt.sign(
+                tokenPayload,
+                JWT_SECRET,
+                { expiresIn: TOKEN_EXPIRY }
+            );
+
+            // Generate a new refresh token (token rotation for better security)
+            const newRefreshToken = jwt.sign(
+                tokenPayload,
+                REFRESH_TOKEN_SECRET,
+                { expiresIn: REFRESH_TOKEN_EXPIRY }
+            );
+
+            // Update refresh token in database
+            await updateRefreshToken(decoded.userId, refreshToken, newRefreshToken);
+
+            // Set new refresh token as HTTP-only cookie
+            res.cookie('refreshToken', newRefreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                maxAge: 7 * 24 * 60 * 60 * 1000,
+                sameSite: 'strict'
+            });
 
             return res.status(200).json({
                 success: true,
-                message: "Logged out successfully"
+                message: "Token refreshed successfully",
+                accessToken: newAccessToken,
+                refreshToken: newRefreshToken // Only include this if you want the client to store it
             });
-        } catch (err) {
-            console.error("Error during logout:", err.stack);
-            return res.status(500).json({
-                success: false,
-                message: "An error occurred during logout",
-                error: err.message
-            });
-        }
-    };
+        });
+    } catch (err) {
+        console.error("Error refreshing token:", err.stack);
+        return res.status(500).json({
+            success: false,
+            message: "An error occurred while refreshing token",
+            error: err.message
+        });
+    }
+};
 
-    // Store a refresh token in the database
-    async function storeRefreshToken(userId, token) {
-        try {
-            // First check if we need to create the refresh_tokens table
-            await pool.query(`
+// Logout function
+// Logout function
+export const logout = async (req, res) => {
+    try {
+        const refreshToken = req.body.refreshToken;
+
+        if (refreshToken) {
+            // Remove refresh token from database
+            await removeRefreshToken(refreshToken);
+        }
+
+        // Clear the refresh token cookie
+        res.clearCookie('refreshToken');
+
+        return res.status(200).json({
+            success: true,
+            message: "Logged out successfully"
+        });
+    } catch (err) {
+        console.error("Error during logout:", err.stack);
+        return res.status(500).json({
+            success: false,
+            message: "An error occurred during logout",
+            error: err.message
+        });
+    }
+};
+
+// Store a refresh token in the database
+async function storeRefreshToken(userId, token) {
+    try {
+        // First check if we need to create the refresh_tokens table
+        await pool.query(`
             CREATE TABLE IF NOT EXISTS refresh_tokens (
                 id SERIAL PRIMARY KEY,
                 user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
@@ -471,75 +471,75 @@ export const userSignup = async (req, res) => {
             )
         `);
 
-            // Calculate expiry date (7 days from now)
-            const expiryDate = new Date();
-            expiryDate.setDate(expiryDate.getDate() + 7);
+        // Calculate expiry date (7 days from now)
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + 7);
 
-            // Insert the token
-            await pool.query(
-                `INSERT INTO refresh_tokens (user_id, token, expires_at)
+        // Insert the token
+        await pool.query(
+            `INSERT INTO refresh_tokens (user_id, token, expires_at)
              VALUES ($1, $2, $3)`,
-                [userId, token, expiryDate]
-            );
+            [userId, token, expiryDate]
+        );
 
-            return true;
-        } catch (error) {
-            console.error("Error storing refresh token:", error);
-            return false;
-        }
+        return true;
+    } catch (error) {
+        console.error("Error storing refresh token:", error);
+        return false;
     }
+}
 
-    // Check if a refresh token is valid
-    async function isRefreshTokenValid(token) {
-        try {
-            const result = await pool.query(
-                `SELECT * FROM refresh_tokens 
+// Check if a refresh token is valid
+async function isRefreshTokenValid(token) {
+    try {
+        const result = await pool.query(
+            `SELECT * FROM refresh_tokens 
              WHERE token = $1 AND is_revoked = FALSE AND expires_at > NOW()`,
-                [token]
-            );
+            [token]
+        );
 
-            return result.rows.length > 0;
-        } catch (error) {
-            console.error("Error verifying refresh token:", error);
-            return false;
-        }
+        return result.rows.length > 0;
+    } catch (error) {
+        console.error("Error verifying refresh token:", error);
+        return false;
     }
+}
 
-    // Remove a refresh token (used during logout)
-    async function removeRefreshToken(token) {
-        try {
-            await pool.query(
-                `UPDATE refresh_tokens 
+// Remove a refresh token (used during logout)
+async function removeRefreshToken(token) {
+    try {
+        await pool.query(
+            `UPDATE refresh_tokens 
              SET is_revoked = TRUE 
              WHERE token = $1`,
-                [token]
-            );
+            [token]
+        );
 
-            return true;
-        } catch (error) {
-            console.error("Error removing refresh token:", error);
-            return false;
-        }
+        return true;
+    } catch (error) {
+        console.error("Error removing refresh token:", error);
+        return false;
     }
+}
 
-    // Update a refresh token (token rotation for better security)
-    async function updateRefreshToken(userId, oldToken, newToken) {
-        try {
-            // Mark old token as revoked
-            await pool.query(
-                `UPDATE refresh_tokens 
+// Update a refresh token (token rotation for better security)
+async function updateRefreshToken(userId, oldToken, newToken) {
+    try {
+        // Mark old token as revoked
+        await pool.query(
+            `UPDATE refresh_tokens 
              SET is_revoked = TRUE 
              WHERE token = $1`,
-                [oldToken]
-            );
+            [oldToken]
+        );
 
-            // Store new token
-            await storeRefreshToken(userId, newToken);
+        // Store new token
+        await storeRefreshToken(userId, newToken);
 
-            return true;
-        } catch (error) {
-            console.error("Error updating refresh token:", error);
-            return false;
-        }
+        return true;
+    } catch (error) {
+        console.error("Error updating refresh token:", error);
+        return false;
     }
+}
 
