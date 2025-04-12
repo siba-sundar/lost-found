@@ -8,6 +8,9 @@ import ItemsDashboard from "./components/user/Dash";
 import ItemDetails from "./components/user/ItemDetails";
 import FoundItemForm from "./components/FoundItem";
 import AddItem from "./components/common/InputForm";
+import UserItemList from "./components/user/UserItemsList"
+import UserItem from "./components/user/UserItem"
+import EditITem from "./components/user/EditItem"
 
 import NotFound from "./components/common/NotFound"
 // Chat components
@@ -79,8 +82,20 @@ function AppRoutes() {
               element: <ItemDetails />
             },
             {
-              path:"List",
+              path:"list",
               element:<List/>
+            },
+            {
+              path:"my-items",
+              element:<UserItemList/>
+            },
+            {
+              path:"my-items/:id",
+              element:<UserItem/>
+            },
+            {
+              path:"my-item/edit/:id",
+              element:<EditITem/>
             }
           ]
         }

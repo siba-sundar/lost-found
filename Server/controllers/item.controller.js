@@ -1,7 +1,7 @@
 import pool from "../config/db.js";
 import { uploadToCloudinary } from '../utils/cloudinary.js';
 import fs from 'fs';
-
+import cloudinary from 'cloudinary';
 
 
 // Add item controller 
@@ -337,7 +337,8 @@ export const deleteItem = async (req, res) => {
         await client.query('BEGIN'); // Start transaction
 
         const itemId = req.params.id;
-        const { userID, role } = req.user; // From authenticateToken middleware
+        const { userId, role } = req.user; // From authenticateToken middleware
+
 
         // First check if item exists and get its details
         const checkItemQuery = `
@@ -357,7 +358,7 @@ export const deleteItem = async (req, res) => {
 
         // Check if user has permission to delete
         // Allow if user is admin or if they created the item
-        if (role !== 'admin' && item.found_by !== userID && item.lost_by !== userID) {
+        if (role !== 'admin' && item.found_by !== userId && item.lost_by !== userId) {
             return res.status(403).json({
                 success: false,
                 message: "You don't have permission to delete this item"
@@ -393,7 +394,7 @@ export const deleteItem = async (req, res) => {
 
         // 2. Delete any associated requests
         await client.query(`
-            DELETE FROM requests 
+            DELETE FROM chat_requests 
             WHERE item_id = $1;
         `, [itemId]);
 
@@ -460,3 +461,178 @@ export const getDashboard = async (req, res) => {
 };
 
 
+export const getUserItems = async (req,res) =>{
+
+    try{
+
+        const{userId} = req.user;
+
+        const userItems = await pool.query(
+            `SELECT i.*, 
+                    COALESCE(json_agg(img.image_url) FILTER (WHERE img.image_url IS NOT NULL), '[]') AS images 
+             FROM items i
+             LEFT JOIN item_images img ON i.item_id = img.item_id
+             WHERE i.found_by = $1 
+             OR i.lost_by = $1 
+             GROUP BY i.item_id
+             ORDER BY i.time_entered 
+             `,[userId]
+        )
+
+
+
+        return res.status(200).json({
+            userOwned : userItems.rows
+        });
+
+    }catch(err){
+        console.error("Error while fetching user Items", err);
+        res.status(500).json({error:"Error while fetching user Items"});
+    }
+}
+
+
+export const editItem = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { userId } = req.user;
+        const { itemName, description, location, dateFound, timeFound, type } = req.body;
+        const files = req.files || [];
+
+        // Validate required fields
+        if (!itemName || !description || !location || !dateFound || !timeFound) {
+            return res.status(400).json({
+                success: false,
+                message: "All details are required"
+            });
+        }
+
+        // Check if item exists and belongs to the user
+        const itemCheck = await pool.query(
+            `SELECT * FROM items WHERE item_id = $1`,
+            [id]
+        );
+
+        if (itemCheck.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Item not found"
+            });
+        }
+
+        const item = itemCheck.rows[0];
+        
+        // Check if user has permission to edit (owner or admin)
+        const { role } = req.user;
+        if (role !== 'admin' && item.found_by !== userId && item.lost_by !== userId) {
+            return res.status(403).json({
+                success: false,
+                message: "You don't have permission to edit this item"
+            });
+        }
+
+        // Update the item in the database
+        let query;
+        let values;
+        
+        if (type === "found") {
+            query = `
+                UPDATE items 
+                SET item_name = $1, description = $2, location = $3, 
+                    date_found = $4, time_found = $5, status = $6
+                WHERE item_id = $7
+                RETURNING item_id, item_name;
+            `;
+            values = [itemName, description, location, dateFound, timeFound, 'found', id];
+        } else if (type === "lost") {
+            query = `
+                UPDATE items 
+                SET item_name = $1, description = $2, location = $3, 
+                    date_found = $4, time_found = $5, status = $6
+                WHERE item_id = $7
+                RETURNING item_id, item_name;
+            `;
+            values = [itemName, description, location, dateFound, timeFound, 'lost', id];
+        } else {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid item type. Only 'found' or 'lost' are allowed"
+            });
+        }
+
+        // Update the item
+        const result = await pool.query(query, values);
+
+        // Handle image uploads if there are new images
+        const imageUrls = [];
+        
+        if (files.length > 0) {
+            if (files.length > 3) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Maximum 3 images allowed"
+                });
+            }
+
+            // Get existing images
+            const existingImagesResult = await pool.query(
+                `SELECT image_url FROM item_images WHERE item_id = $1`,
+                [id]
+            );
+            
+            const existingImages = existingImagesResult.rows;
+
+            // Delete existing images from Cloudinary and database if new images are uploaded
+            if (existingImages.length > 0) {
+                for (const img of existingImages) {
+                    try {
+                        // Extract public_id from Cloudinary URL
+                        const publicId = img.image_url.split('/').pop().split('.')[0];
+                        await cloudinary.uploader.destroy(publicId);
+                    } catch (error) {
+                        console.error("Error deleting image from Cloudinary:", error);
+                    }
+                }
+
+                // Delete image records from database
+                await pool.query(`DELETE FROM item_images WHERE item_id = $1`, [id]);
+            }
+
+            // Upload new images
+            for (const file of files) {
+                try {
+                    // Upload to Cloudinary
+                    const imageUrl = await uploadToCloudinary(file.path);
+                    imageUrls.push(imageUrl);
+                    
+                    // Delete the temp file after upload
+                    fs.unlink(file.path, (err) => {
+                        if (err) console.error(`Failed to delete temp file: ${file.path}`, err);
+                    });
+                    
+                    // Insert image URL into item_images table
+                    await pool.query(`
+                        INSERT INTO item_images (item_id, image_url)
+                        VALUES ($1, $2);
+                    `, [id, imageUrl]);
+                    
+                } catch (uploadError) {
+                    console.error("Error uploading to Cloudinary:", uploadError);
+                }
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `${result.rows[0].item_name} updated successfully`,
+            images: imageUrls.length > 0 ? imageUrls : "No new images uploaded"
+        });
+
+    } catch (err) {
+        console.error("Error while updating item:", err);
+        return res.status(500).json({
+            success: false,
+            message: "An error occurred while updating the item, please try again later."
+        });
+    }
+};

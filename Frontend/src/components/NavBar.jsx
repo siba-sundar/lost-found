@@ -305,7 +305,7 @@ const Navbar = () => {
             <div className="flex justify-between items-center px-3 py-2">
               <div className="flex space-x-4">
                 {/* Messages Icon */}
-                <Link to={isAuthenticated ? "/chats" : "/login"} className="text-white hover:text-gray-300 relative">
+                <Link to={isAuthenticated ? "/user/chat" : "/login"} className="text-white hover:text-gray-300 relative">
                   <MessageCircle size={20} />
                   {isAuthenticated && unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
@@ -336,7 +336,7 @@ const Navbar = () => {
                   <Settings size={16} className="mr-2" />
                   Settings
                 </Link>
-                <Link to="/handle-items" className="flex items-center px-3 py-2 text-white hover:bg-gray-800 rounded">
+                <Link to="/user/my-item" className="flex items-center px-3 py-2 text-white hover:bg-gray-800 rounded">
                   <Package size={16} className="mr-2" />
                   Handle Items
                 </Link>

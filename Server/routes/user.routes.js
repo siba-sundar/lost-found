@@ -10,4 +10,5 @@ userRoute.put('/edit', authenticateToken, editDetails);
 userRoute.delete('/delete', authenticateToken, deleteUser);
 
 
+
 export default userRoute;

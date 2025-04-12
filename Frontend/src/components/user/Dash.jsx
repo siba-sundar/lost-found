@@ -1,6 +1,6 @@
 import axios from "axios";
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 const ItemsDashboard = () => {
     const [data, setData] = useState({ foundItems: [], lostItems: [] });
@@ -83,9 +83,9 @@ const ItemsDashboard = () => {
         <div className="mb-8">
             <div className="flex justify-between items-center mb-4">
                 <h2 className={`text-xl font-bold ${color}`}>{title}</h2>
-                <button className="text-white hover:text-blue-800 text-sm font-medium">
+                <Link to="/user/list" className="text-white hover:text-blue-800 text-sm font-medium">
                     View All
-                </button>
+                </Link>
             </div>
 
             {items.length === 0 ? (
