@@ -130,7 +130,7 @@ const ItemDetails = () => {
   
 
   return (
-    <div className="container mx-auto p-4 text-white min-h-screen">
+    <div className=" text-white bg-[#0a0a0a] w-screen min-h-screen">
       {/* Notification */}
       {notification.show && (
         <div className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg ${

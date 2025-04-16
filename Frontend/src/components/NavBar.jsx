@@ -89,7 +89,7 @@ const Navbar = () => {
             {/* Left - Brand Name */}
             <div className="flex-shrink-0">
               <Link to="/" className="text-xl font-bold text-white hover:text-gray-300">
-                MySite
+                LostnFound
               </Link>
             </div>
 

@@ -24,9 +24,9 @@ const EditItem = () => {
   useEffect(() => {
     const fetchItem = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get(`/api/items/single/${id}`, {
-          headers: { Authorization: `Bearer ${token}` }
+        const accessToken = sessionStorage.getItem('accessToken');
+        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/item/single-item/${id}`, {
+          headers: { Authorization: `Bearer ${accessToken}` }
         });
 
         if (response.data.success) {
@@ -100,11 +100,11 @@ const EditItem = () => {
         });
       }
 
-      const token = localStorage.getItem('token');
-      const response = await axios.put(`/api/items/edit/${id}`, formData, {
+      const accessToken = sessionStorage.getItem('accessToken');
+      const response = await axios.put(`${import.meta.env.VITE_BASE_URL}/api/item/edit/${id}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${accessToken}`
         }
       });
 

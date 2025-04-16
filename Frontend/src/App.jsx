@@ -94,7 +94,7 @@ function AppRoutes() {
               element:<UserItem/>
             },
             {
-              path:"my-item/edit/:id",
+              path:"my-items/edit/:id",
               element:<EditITem/>
             }
           ]

@@ -50,7 +50,7 @@ const ItemDetails = () => {
   }, [id]);
 
   const handleEdit = () => {
-    navigate(`/edit-item/${id}`);
+    navigate(`/my-items/edit/${id}`);
   };
 
   const handleDelete = async () => {
