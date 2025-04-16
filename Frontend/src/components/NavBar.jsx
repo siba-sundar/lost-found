@@ -121,7 +121,7 @@ const Navbar = () => {
               {/* Icons - Always visible regardless of user status */}
               <div className="flex  items-center space-x-2 ml-4">
                 {/* Messages Icon */}
-                  {/* <Link to={isAuthenticated ? "/user/chat" : "/login"} className="p-2 rounded-full hover:bg-gray-800 focus:outline-none relative">
+                  <Link to={isAuthenticated ? "/user/chat" : "/login"} className="p-2 rounded-full hover:bg-gray-800 focus:outline-none relative">
                     <MessageCircle size={20} />
                     {isAuthenticated && unreadCount > 0 && (
                       <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
@@ -129,7 +129,7 @@ const Navbar = () => {
                       </span>
                     )}
                   </Link>
-                  */}
+                 
                 {/* Notification Icon */}
                 <div className="relative" ref={notificationRef}>
                   <button 
@@ -154,7 +154,7 @@ const Navbar = () => {
                               {chatRequests.slice(0, 3).map(request => (
                                 <Link 
                                   key={request.request_id}
-                                  to="/chats" 
+                                  to="/user/chat" 
                                   className="flex items-start px-4 py-3 hover:bg-gray-800 border-b border-gray-800"
                                 >
                                   <div className="flex-shrink-0">
@@ -229,14 +229,14 @@ const Navbar = () => {
                       {isAuthenticated ? (
                         <>
                           <Link 
-                            to="/settings" 
+                            to="/user/settings" 
                             className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-800"
                           >
                             <Settings size={16} className="mr-2 text-gray-400" />
                             Settings
                           </Link>
                           <Link 
-                            to="/handle-items" 
+                            to="/user/my-items" 
                             className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-800"
                           >
                             <Package size={16} className="mr-2 text-gray-400" />
@@ -313,7 +313,7 @@ const Navbar = () => {
                 </Link> */}
                 
                 {/* Notification Icon */}
-                <Link to={isAuthenticated ? "/notifications" : "/login"} className="text-white hover:text-gray-300 flex  gap-2">
+                <Link to={isAuthenticated ? "/user/notifications" : "/login"} className="text-white hover:text-gray-300 flex  gap-2">
                   <Bell size={20} />
                   <span>Notification</span>
                 </Link>
@@ -332,7 +332,7 @@ const Navbar = () => {
             {/* Mobile User Options */}
             {isAuthenticated ? (
               <div className="space-y-1 mt-2">
-                <Link to="/settings" className="flex items-center px-3 py-2 text-white hover:bg-gray-800 rounded">
+                <Link to="/user/settings" className="flex items-center px-3 py-2 text-white hover:bg-gray-800 rounded">
                   <Settings size={16} className="mr-2" />
                   Settings
                 </Link>

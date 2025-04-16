@@ -75,7 +75,7 @@ const ItemListing = () => {
 
   // Handle item click to navigate to details
   const handleItemClick = (item) => {
-    navigate(`/item/${item.item_id}`, { state: { item } });
+    navigate(`/user/item/${item.item_id}`, { state: { item } });
   };
 
   // Handle filter change

@@ -168,7 +168,7 @@ const ChatDetails = () => {
         userId: currentUser.user_id
       });
       
-      navigate('/chats');
+      navigate('/user/chats');
     } catch (err) {
       console.error('Error closing chat:', err);
       setError('Failed to close chat');
@@ -189,7 +189,7 @@ const ChatDetails = () => {
         <div className="bg-red-500 bg-opacity-10 border border-red-500 text-red-500 p-4 rounded-lg">
           <p>{error}</p>
           <button 
-            onClick={() => navigate('/chats')}
+            onClick={() => navigate('/user/chat')}
             className="mt-4 bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-600"
           >
             Back to Chats

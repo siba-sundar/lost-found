@@ -187,6 +187,13 @@ const ItemDetails = () => {
               )}
               {confirmDelete ? 'Confirm Delete' : 'Delete'}
             </button>
+
+
+            <button className='bg-green-400 px-4 py-2 rounded-lg'
+            onClick={handleDelete}
+            >
+              Resolved
+            </button>
           </div>
         </div>
         

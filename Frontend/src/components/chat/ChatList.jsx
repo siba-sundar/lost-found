@@ -89,7 +89,7 @@ const ChatList = () => {
         {chats.map((chat) => (
           <Link 
             key={chat.chat_id} 
-            to={`/chat/${chat.chat_id}`}
+            to={`/user/chat/${chat.chat_id}`}
             className="flex items-center p-4 hover:bg-gray-800 transition-colors"
           >
             {/* Avatar */}

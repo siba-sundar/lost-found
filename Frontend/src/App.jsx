@@ -12,6 +12,7 @@ import UserItemList from "./components/user/UserItemsList"
 import UserItem from "./components/user/UserItem"
 import EditITem from "./components/user/EditItem"
 import Settings from "./components/common/Settings"
+import Notifications from "./components/common/Notification";
 
 import NotFound from "./components/common/NotFound"
 // Chat components
@@ -101,6 +102,10 @@ function AppRoutes() {
             {
               path:"settings",
               element:<Settings/>
+            },
+            {
+              path:"notifications",
+              element:<Notifications/>
             }
           ]
         }
