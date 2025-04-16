@@ -119,17 +119,17 @@ const Navbar = () => {
               </Link>
               
               {/* Icons - Always visible regardless of user status */}
-              <div className="flex items-center space-x-2 ml-4">
+              <div className="flex  items-center space-x-2 ml-4">
                 {/* Messages Icon */}
-                <Link to={isAuthenticated ? "/chats" : "/login"} className="p-2 rounded-full hover:bg-gray-800 focus:outline-none relative">
-                  <MessageCircle size={20} />
-                  {isAuthenticated && unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </span>
-                  )}
-                </Link>
-                
+                  {/* <Link to={isAuthenticated ? "/user/chat" : "/login"} className="p-2 rounded-full hover:bg-gray-800 focus:outline-none relative">
+                    <MessageCircle size={20} />
+                    {isAuthenticated && unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </Link>
+                  */}
                 {/* Notification Icon */}
                 <div className="relative" ref={notificationRef}>
                   <button 
@@ -141,7 +141,7 @@ const Navbar = () => {
                   
                   {/* Notification Dropdown */}
                   {isNotificationOpen && (
-                    <div className="absolute right-0 mt-2 w-80 bg-gray-900 border border-gray-700 rounded-md shadow-lg py-1 z-50">
+                    <div className="absolute right-0 mt-2 w-80 bg-black border border-gray-700 rounded-md shadow-lg py-1 z-50">
                       <div className="px-4 py-2 border-b border-gray-800">
                         <h3 className="text-sm font-medium">Notifications</h3>
                       </div>
@@ -225,7 +225,7 @@ const Navbar = () => {
                   
                   {/* Profile Dropdown */}
                   {isProfileOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-700 rounded-md shadow-lg py-1 z-50">
+                    <div className="absolute right-0 mt-2 w-48 bg-black border border-gray-700 rounded-md shadow-lg py-1 z-50">
                       {isAuthenticated ? (
                         <>
                           <Link 
@@ -242,7 +242,7 @@ const Navbar = () => {
                             <Package size={16} className="mr-2 text-gray-400" />
                             Handle Items
                           </Link>
-                          <Link 
+                          {/* <Link 
                             to="/user/chat" 
                             className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-800"
                           >
@@ -253,7 +253,7 @@ const Navbar = () => {
                                 {unreadCount}
                               </span>
                             )}
-                          </Link>
+                          </Link> */}
                           <button 
                             onClick={logout}
                             className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800"
@@ -289,7 +289,7 @@ const Navbar = () => {
         </div>
 
         {/* Mobile Navigation Dropdown */}
-        <div className={`${isMenuOpen ? 'block' : 'hidden'} md:hidden bg-gray-900`}>
+        <div className={`${isMenuOpen ? 'block' : 'hidden'} md:hidden bg-black`}>
           <div className="px-2 pt-2 pb-3 space-y-1">
             <Link to="/" className="block px-3 py-2 text-white hover:bg-gray-800 rounded">
               Home
@@ -300,29 +300,31 @@ const Navbar = () => {
             </Link>
             
             {/* Mobile Icons - Always visible */}
-            <div className="flex justify-between items-center px-3 py-2">
-              <div className="flex space-x-4">
+            <div className="flex flex-col  px-3 py-2">
+              <div className=" space-x-2 ">
                 {/* Messages Icon */}
-                <Link to={isAuthenticated ? "/user/chat" : "/login"} className="text-white hover:text-gray-300 relative">
+                {/* <Link to={isAuthenticated ? "/user/chat" : "/login"} className="text-white hover:text-gray-300 relative">
                   <MessageCircle size={20} />
                   {isAuthenticated && unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
-                </Link>
+                </Link> */}
                 
                 {/* Notification Icon */}
-                <Link to={isAuthenticated ? "/notifications" : "/login"} className="text-white hover:text-gray-300">
+                <Link to={isAuthenticated ? "/notifications" : "/login"} className="text-white hover:text-gray-300 flex  gap-2">
                   <Bell size={20} />
+                  <span>Notification</span>
                 </Link>
                 
                 {/* Add Items Button */}
                 <button
                   onClick={handleAddButtonClick}
-                  className="text-white hover:text-gray-300"
+                  className="text-white hover:text-gray-300 flex gap-2 pr-3"
                 >
                   <Plus size={20} />
+                  <span>Add Item</span>
                 </button>
               </div>
             </div>
@@ -338,7 +340,7 @@ const Navbar = () => {
                   <Package size={16} className="mr-2" />
                   Handle Items
                 </Link>
-                <Link to="/chats" className="flex items-center px-3 py-2 text-white hover:bg-gray-800 rounded">
+                <Link to="/user/chat" className="flex items-center px-3 py-2 text-white hover:bg-gray-800 rounded">
                   <MessageCircle size={16} className="mr-2" />
                   Messages
                   {unreadCount > 0 && (
@@ -374,7 +376,7 @@ const Navbar = () => {
       {/* InputForm Modal */}
       {isInputFormOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-lg w-full max-w-lg p-6 relative">
+          <div className="bg-black rounded-lg w-full max-w-lg p-6 relative">
             <button 
               onClick={handleCloseInputForm}
               className="absolute top-4 right-4 text-gray-400 hover:text-white"

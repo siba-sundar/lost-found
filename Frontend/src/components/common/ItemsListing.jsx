@@ -205,7 +205,7 @@ const ItemListing = () => {
               </div>
               
               {/* Added Sort By dropdown */}
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1">Sort By</label>
                 <select
                   name="sortBy"
@@ -220,7 +220,7 @@ const ItemListing = () => {
                   <option value="a_to_z">A to Z</option>
                   <option value="z_to_a">Z to A</option>
                 </select>
-              </div>
+              </div> */}
               
               <div className="flex items-end md:col-span-3">
                 <button
@@ -236,7 +236,7 @@ const ItemListing = () => {
         
         {/* Quick sort for mobile (always visible) */}
         <div className="mb-6">
-          <div className="flex items-center">
+          {/* <div className="flex items-center">
             <label className="text-sm font-medium text-gray-400 mr-2">Sort:</label>
             <select
               name="sortBy"
@@ -251,7 +251,7 @@ const ItemListing = () => {
               <option value="a_to_z">A to Z</option>
               <option value="z_to_a">Z to A</option>
             </select>
-          </div>
+          </div> */}
         </div>
         
         {/* Loading indicator */}

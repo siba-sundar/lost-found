@@ -48,8 +48,8 @@ const Chat = () => {
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="bg-gray-900 rounded-lg overflow-hidden shadow-lg">
+    <div className="container mx-auto p-4 min-h-screen">
+      <div className="bg-black rounded-lg overflow-hidden shadow-lg">
         {/* Tab navigation */}
         <div className="flex border-b border-gray-700">
           <button
