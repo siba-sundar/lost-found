@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../components/utils/AuthContext.jsx";
+import banner from "/login.png";
 
 const Signup = () => {
     const navigate = useNavigate();
@@ -95,14 +96,14 @@ const Signup = () => {
                 <div className="md:w-1/2 relative">
                     <div className="w-full h-48 md:h-full bg-gradient-to-br from-indigo-900 via-purple-900 to-black relative overflow-hidden">
                         <img 
-                            src="/api/placeholder/600/800" 
+                            src={banner} 
                             alt="Signup visual" 
                             className="w-full h-full object-cover opacity-70 mix-blend-overlay"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
                         <div className="absolute bottom-0 left-0 p-8 text-white">
-                            <h1 className="text-3xl font-bold mb-2">Join Us</h1>
-                            <p className="text-gray-300">Create your account to get started</p>
+                            <h1 className="text-3xl font-bold mb-2">Lost Something?</h1>
+                            <p className="text-gray-300">Create your account and find what's yours.</p>
                         </div>
                     </div>
                 </div>
@@ -122,7 +123,7 @@ const Signup = () => {
 
                     <form onSubmit={handleSubmit}>
                         <div className="mb-6 flex justify-center">
-                            <div className="relative">
+                            {/* <div className="relative">
                                 <div className="h-24 w-24 rounded-full bg-gray-800 flex items-center justify-center overflow-hidden border-2 border-gray-700">
                                     {profilePreview ? (
                                         <img 
@@ -150,7 +151,7 @@ const Signup = () => {
                                         accept="image/*"
                                     />
                                 </label>
-                            </div>
+                            </div> */}
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

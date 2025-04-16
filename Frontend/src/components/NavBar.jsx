@@ -114,8 +114,8 @@ const Navbar = () => {
               <Link to="/" className="text-white hover:text-gray-300 px-3 py-2">
                 Home
               </Link>
-              <Link to="/contact" className="text-white hover:text-gray-300 px-3 py-2">
-                Contact
+              <Link to="/user/list" className="text-white hover:text-gray-300 px-3 py-2">
+                All Items
               </Link>
               
               {/* Icons - Always visible regardless of user status */}
@@ -294,11 +294,9 @@ const Navbar = () => {
             <Link to="/" className="block px-3 py-2 text-white hover:bg-gray-800 rounded">
               Home
             </Link>
-            <Link to="/about" className="block px-3 py-2 text-white hover:bg-gray-800 rounded">
-              About
-            </Link>
-            <Link to="/contact" className="block px-3 py-2 text-white hover:bg-gray-800 rounded">
-              Contact
+            
+            <Link to="/user/list" className="block px-3 py-2 text-white hover:bg-gray-800 rounded">
+              All Items
             </Link>
             
             {/* Mobile Icons - Always visible */}

@@ -140,7 +140,7 @@ const ItemDetails = () => {
         </div>
       )}
 
-      <div className="bg-gray-900 rounded-lg shadow-lg overflow-hidden w-full">
+      <div className="rounded-lg shadow-lg overflow-hidden w-full">
         <div className="flex flex-col md:flex-row">
           {/* Left side - Images Section */}
           <div className="w-full md:w-1/2 p-4">

@@ -11,6 +11,7 @@ import AddItem from "./components/common/InputForm";
 import UserItemList from "./components/user/UserItemsList"
 import UserItem from "./components/user/UserItem"
 import EditITem from "./components/user/EditItem"
+import Settings from "./components/common/Settings"
 
 import NotFound from "./components/common/NotFound"
 // Chat components
@@ -96,6 +97,10 @@ function AppRoutes() {
             {
               path:"my-items/edit/:id",
               element:<EditITem/>
+            },
+            {
+              path:"settings",
+              element:<Settings/>
             }
           ]
         }
@@ -113,9 +118,11 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
+    <div className="overflow-x-hidden">
+      <AuthProvider>
       <AppRoutes />
     </AuthProvider>
+    </div>
   );
 }
 

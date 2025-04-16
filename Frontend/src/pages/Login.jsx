@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/utils/AuthContext.jsx';
+import banner from "/signup.png"
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
@@ -33,14 +34,14 @@ const LoginPage = () => {
                 <div className="md:w-1/2 relative">
                     <div className="w-full h-48 md:h-full bg-gradient-to-br from-blue-900 via-purple-900 to-black relative overflow-hidden">
                         <img 
-                            src="/api/placeholder/600/800" 
+                            src={banner} 
                             alt="Login visual" 
                             className="w-full h-full object-cover opacity-70 mix-blend-overlay"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
                         <div className="absolute bottom-0 left-0 p-8 text-white">
                             <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
-                            <p className="text-gray-300">Sign in to continue your journey</p>
+                            <p className="text-gray-300">Did you find something this time? </p>
                         </div>
                     </div>
                 </div>

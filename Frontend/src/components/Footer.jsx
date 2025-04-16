@@ -1,9 +1,9 @@
 import React from 'react';
-import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin, GitHub } from 'lucide-react';
+import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
 
 const Footer = () => {
   return (
-    <footer className="bg-gray-900 text-gray-300">
+    <footer className="bg-black text-gray-300">
       {/* Main footer content */}
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -104,9 +104,7 @@ const Footer = () => {
               <a href="https://linkedin.com" className="text-gray-400 hover:text-blue-400 transition duration-300">
                 <Linkedin size={20} />
               </a>
-              <a href="https://github.com" className="text-gray-400 hover:text-blue-400 transition duration-300">
-                <GitHub size={20} />
-              </a>
+              
             </div>
           </div>
         </div>
